@@ -1,0 +1,45 @@
+@model CheckoutViewModel
+@{ var r = Model.Request; var h = Model.Hotel; var rm = Model.Room; var nights = (r.CheckOut.Date - r.CheckIn.Date).Days; bool bad = ViewBag.StayError != null || ViewBag.AvailError != null || Model.Quote == null; }
+<div class="container py-4">
+  <div class="steps" aria-label="Các bước đặt phòng"><div class="s done"><b>1</b>Chọn phòng</div><span class="sep"></span><div class="s on"><b>2</b>Thông tin &amp; giá</div><span class="sep"></span><div class="s"><b>3</b>Thanh toán</div><span class="sep"></span><div class="s"><b>4</b>Xác nhận</div></div>
+  @using (Html.BeginForm("Create", "Booking", FormMethod.Post))
+  {
+    @Html.AntiForgeryToken()
+    @Html.HiddenFor(m => m.Request.HotelId) @Html.HiddenFor(m => m.Request.RoomId)
+    @Html.Hidden("Request.CheckIn", r.CheckIn.ToString("yyyy-MM-dd")) @Html.Hidden("Request.CheckOut", r.CheckOut.ToString("yyyy-MM-dd"))
+    <div class="row g-4">
+      <div class="col-lg-7">
+        @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+        @if (ViewBag.StayError != null) { <div class="alert alert-danger">@ViewBag.StayError</div> }
+        @if (ViewBag.AvailError != null) { <div class="alert alert-danger">@ViewBag.AvailError <a href="@Url.Action("Details", "Hotels", new { id = h.Id })">Chọn ngày/loại phòng khác</a></div> }
+        <div class="box mb-3"><h2 class="h5">Thông tin khách lưu trú</h2>
+          <div class="row g-3">
+            <div class="col-12"><label class="form-label" for="Request_GuestName">Họ và tên</label>@Html.TextBoxFor(m => m.Request.GuestName, new { @class = "form-control", autocomplete = "name" })@Html.ValidationMessageFor(m => m.Request.GuestName)</div>
+            <div class="col-md-6"><label class="form-label" for="Request_GuestEmail">Email nhận xác nhận</label>@Html.TextBoxFor(m => m.Request.GuestEmail, new { @class = "form-control", type = "email" })@Html.ValidationMessageFor(m => m.Request.GuestEmail)</div>
+            <div class="col-md-6"><label class="form-label" for="Request_GuestPhone">Số điện thoại</label>@Html.TextBoxFor(m => m.Request.GuestPhone, new { @class = "form-control", type = "tel" })@Html.ValidationMessageFor(m => m.Request.GuestPhone)</div>
+            <div class="col-4"><label class="form-label" for="Request_Adults">Người lớn</label>@Html.TextBoxFor(m => m.Request.Adults, new { @class = "form-control", type = "number", min = 1, max = 20 })</div>
+            <div class="col-4"><label class="form-label" for="Request_Children">Trẻ em</label>@Html.TextBoxFor(m => m.Request.Children, new { @class = "form-control", type = "number", min = 0, max = 20 })</div>
+            <div class="col-4"><label class="form-label" for="Request_Rooms">Số phòng</label>@Html.TextBoxFor(m => m.Request.Rooms, new { @class = "form-control", type = "number", min = 1, max = 10 })</div>
+            <div class="col-12"><label class="form-label" for="Request_Note">Yêu cầu đặc biệt (tùy chọn)</label>@Html.TextAreaFor(m => m.Request.Note, 3, 40, new { @class = "form-control", maxlength = 500 })<div class="form-text">Yêu cầu phụ thuộc vào khả năng đáp ứng của chỗ nghỉ.</div></div>
+            <div class="col-12"><label class="form-label" for="Request_CouponCode">Mã khuyến mãi</label>
+              <div class="input-group">@Html.TextBoxFor(m => m.Request.CouponCode, new { @class = "form-control", autocomplete = "off" })<button class="btn btn-ghost no-loading" type="submit" formaction="@Url.Action("Quote")">Áp dụng</button></div>
+              @if (Model.CouponMessage != null) { <div class="small mt-1 @(Model.Quote != null && Model.Quote.Discount > 0 ? "text-success" : "text-danger")">@Model.CouponMessage</div> }</div>
+          </div></div>
+        <div class="box"><h2 class="h5">Điều kiện đặt phòng</h2>
+          <p class="small mb-2"><strong>Chính sách hủy:</strong> @Model.CancelPolicyText</p>
+          <p class="small mb-2">Nhận phòng từ @Model.CheckInTime, trả phòng trước @Model.CheckOutTime. Phòng được giữ @AppConfig.HoldMinutes phút để thanh toán; đơn chỉ được xác nhận sau khi thanh toán thành công. <a href="@Url.Action("Policy", "Home")" target="_blank">Xem điều khoản</a></p>
+          <div class="form-check"><input class="form-check-input" type="checkbox" id="AcceptTerms" name="Request.AcceptTerms" value="true" required /><label class="form-check-label" for="AcceptTerms">Tôi đã đọc và đồng ý với điều kiện đặt phòng &amp; chính sách hủy.</label></div>
+          <input type="hidden" name="Request.AcceptTerms" value="false" />
+        </div>
+      </div>
+      <div class="col-lg-5"><div class="sticky-box"><div class="box">
+        <div class="d-flex gap-3 mb-3"><img src="@Html.Img(h.CoverImageUrl)" alt="@h.Name" width="96" height="72" style="object-fit:cover;border-radius:10px" /><div><strong>@h.Name</strong><div class="small text-muted">@h.Address</div>@Html.Stars(h.Stars)</div></div>
+        <div class="small mb-3"><div>@Html.Icon("bed", 14) <strong>@rm.Name</strong> × @r.Rooms</div><div>@Html.Icon("calendar", 14) @Html.Date(r.CheckIn) → @Html.Date(r.CheckOut) (@nights đêm)</div></div>
+        @if (Model.Quote != null) { @Html.Partial("_PriceTable", Model.Quote) }
+        <button class="btn btn-primary w-100 mt-3 py-2" type="submit" @(bad ? "disabled" : "")>Tiếp tục thanh toán</button>
+        <p class="small text-muted mt-2 mb-0">Bạn chưa bị trừ tiền ở bước này. Phòng sẽ được giữ @AppConfig.HoldMinutes phút.</p>
+      </div></div></div>
+    </div>
+  }
+</div>
+@section scripts { @Scripts.Render("~/bundles/jqueryval") }

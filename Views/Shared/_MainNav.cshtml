@@ -1,0 +1,62 @@
+@model MegaMenu
+@{ var ctl = (string)ViewContext.RouteData.Values["controller"]; Func<decimal, string> k = v => (v / 1000000m).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture); }
+<ul class="navbar-nav me-auto ms-lg-3 mainnav">
+  <li class="nav-item has-mega">
+    <a class="nav-link" href="@Url.Action("Index", "Home", new { area = "" })#kham-pha">Khám phá</a><button class="mega-caret" type="button" aria-expanded="false" aria-controls="mm-kp" aria-label="Mở menu Khám phá">@Html.Icon("chevron-right", 14)</button>
+    <div class="mega" id="mm-kp"><div class="mega-in">
+      <div class="mcol"><h6>Theo chủ đề</h6>
+        @foreach (var s in Model.Styles) { <a href="@Url.Action("Index", "Destinations", new { style = s.Key })"><span>@s.Key</span><small>@s.Count điểm đến</small></a> }
+        @if (!Model.Styles.Any()) { <span class="text-muted small">Đang cập nhật</span> }</div>
+      <div class="mcol"><h6>Theo vùng</h6>
+        @foreach (var r in Model.Regions) { <a href="@Url.Action("Index", "Destinations", new { region = r.Key })"><span>Miền @r.Key</span><small>@r.Count điểm đến</small></a> }</div>
+      <div class="mcol mcol-promo"><h6>Ưu đãi đang áp dụng</h6>
+        @foreach (var p in Model.Promotions) { <a href="@Url.Action("Index", "Hotels")"><span><b class="code">@p.Code</b> @(p.PercentOff.HasValue ? "−" + p.PercentOff.Value.ToString("0.##") + "%" : p.AmountOff.HasValue ? "−" + (p.AmountOff.Value / 1000m).ToString("0") + "K" : "")</span><small>@p.Name</small></a> }
+        @if (!Model.Promotions.Any()) { <span class="text-muted small">Hiện chưa có mã khuyến mãi.</span> }
+        <div class="small text-muted mt-2">Nhập mã ở bước đặt phòng.</div></div>
+    </div></div>
+  </li>
+  <li class="nav-item has-mega">
+    <a class="nav-link @(ctl == "Hotels" ? "active" : "")" href="@Url.Action("Index", "Hotels", new { area = "" })">Chỗ nghỉ</a><button class="mega-caret" type="button" aria-expanded="false" aria-controls="mm-cn" aria-label="Mở menu Chỗ nghỉ">@Html.Icon("chevron-right", 14)</button>
+    <div class="mega" id="mm-cn"><div class="mega-in">
+      <div class="mcol"><h6>Loại hình lưu trú</h6>
+        @foreach (var t in Model.PropertyTypes) { <a href="@Url.Action("Index", "Hotels", new { types = t.Key })"><span>@t.Key</span><small>@t.Count</small></a> }</div>
+      <div class="mcol"><h6>Hạng sao</h6>
+        @foreach (var s in Model.StarBuckets) { <a href="@Url.Action("Index", "Hotels", new { stars = s.Key })"><span>@s.Key sao@(s.Key == "5" ? "" : " trở lên")</span><small>@s.Count</small></a> }</div>
+      <div class="mcol"><h6>Tiện ích &amp; chính sách</h6>
+        <a href="@Url.Action("Index", "Hotels", new { freeCancel = "true" })"><span>Miễn phí hủy</span><small>@Model.FreeCancel</small></a>
+        <a href="@Url.Action("Index", "Hotels", new { breakfast = "true" })"><span>Bao gồm bữa sáng</span><small>@Model.WithBreakfast</small></a>
+        <h6 class="mt-3">Ngân sách / đêm</h6>
+        <a href="@Url.Action("Index", "Hotels", new { maxPrice = 1000000, sort = "price-asc" })"><span>Dưới 1 triệu</span></a>
+        <a href="@Url.Action("Index", "Hotels", new { minPrice = 1000000, maxPrice = 2000000 })"><span>1 – 2 triệu</span></a>
+        <a href="@Url.Action("Index", "Hotels", new { minPrice = 2000000, sort = "price-desc" })"><span>Trên 2 triệu</span></a></div>
+      <div class="mcol mcol-cta"><div class="mega-cta"><b>@Model.TotalHotels chỗ nghỉ</b><span>giá từ @k(Model.MinPrice) triệu/đêm</span><a class="btn btn-cta btn-sm" href="@Url.Action("Index", "Hotels")">Xem tất cả</a></div></div>
+    </div></div>
+  </li>
+  <li class="nav-item has-mega">
+    <a class="nav-link @(ctl == "Destinations" ? "active" : "")" href="@Url.Action("Index", "Destinations", new { area = "" })">Điểm đến</a><button class="mega-caret" type="button" aria-expanded="false" aria-controls="mm-dd" aria-label="Mở menu Điểm đến">@Html.Icon("chevron-right", 14)</button>
+    <div class="mega" id="mm-dd"><div class="mega-in mega-dest">
+      @foreach (var d in Model.Destinations.Take(12)) { <a class="dtile" href="@Url.Action("Index", "Hotels", new { destinationId = d.Id })"><img src="@Html.Img(d.ImageUrl)" alt="" loading="lazy" width="44" height="44" /><span><b>@d.Name</b><small>@(d.HotelCount > 0 ? d.HotelCount + " chỗ nghỉ" : "Sắp có chỗ nghỉ")@(d.Region != "" ? " · " + d.Region : "")</small></span></a> }
+    </div></div>
+  </li>
+  <li class="nav-item has-mega">
+    <a class="nav-link @(ctl == "Articles" ? "active" : "")" href="@Url.Action("Index", "Articles", new { area = "" })">Trải nghiệm</a><button class="mega-caret" type="button" aria-expanded="false" aria-controls="mm-tn" aria-label="Mở menu Trải nghiệm">@Html.Icon("chevron-right", 14)</button>
+    <div class="mega" id="mm-tn"><div class="mega-in">
+      <div class="mcol"><h6>Cẩm nang theo chủ đề</h6>
+        @foreach (var c in Model.ArticleCategories) { <a href="@Url.Action("Index", "Articles", new { category = c.Key })"><span>@c.Key</span><small>@c.Count bài</small></a> }</div>
+      <div class="mcol"><h6>Địa điểm nổi bật</h6>
+        @foreach (var a in Model.Attractions) { <a href="@Url.Action("Details", "Destinations", new { id = a.DestinationId })"><span>@a.Name</span><small>@a.DestinationName</small></a> }</div>
+      <div class="mcol mcol-art"><h6>Mới nhất</h6>
+        @foreach (var a in Model.LatestArticles) { <a class="atile" href="@Url.Action("Details", "Articles", new { id = a.Id })"><img src="@Html.Img(a.ImageUrl)" alt="" loading="lazy" width="56" height="42" /><span>@a.Title</span></a> }</div>
+    </div></div>
+  </li>
+  <li class="nav-item has-mega">
+    <a class="nav-link @(ctl == "Contact" ? "active" : "")" href="@Url.Action("Index", "Contact", new { area = "" })">Hỗ trợ</a><button class="mega-caret" type="button" aria-expanded="false" aria-controls="mm-ht" aria-label="Mở menu Hỗ trợ">@Html.Icon("chevron-right", 14)</button>
+    <div class="mega mega-narrow" id="mm-ht"><div class="mega-in">
+      <div class="mcol"><h6>Trợ giúp</h6>
+        <a href="@Url.Action("Index", "Contact")"><span>Gửi yêu cầu hỗ trợ</span><small>Phản hồi qua email</small></a>
+        <a href="@Url.Action("Policy", "Home")"><span>Điều khoản &amp; chính sách hủy</span><small>3 loại chính sách</small></a>
+        <a href="@Url.Action("My", "Booking")"><span>Tra cứu đặt phòng của tôi</span><small>Cần đăng nhập</small></a>
+        <a href="mailto:@AppConfig.Setting("EmailHoTro", "support@travelhub.vn")"><span>@AppConfig.Setting("EmailHoTro", "support@travelhub.vn")</span><small>Email hỗ trợ</small></a></div>
+    </div></div>
+  </li>
+</ul>

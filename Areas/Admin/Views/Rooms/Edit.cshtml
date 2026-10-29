@@ -1,0 +1,47 @@
+@model TravelHub.Areas.Admin.Controllers.RoomEditModel
+@{ var images = ViewBag.Images as List<RoomImageItem>; var blocks = ViewBag.Blocks as List<dynamic>; var prices = ViewBag.Prices as List<dynamic>; }
+<h1>@ViewBag.Title</h1>
+@if (Model.Id != 0) { <p class="text-muted">Thuộc <a href="@Url.Action("Edit", "Hotels", new { id = Model.HotelId })">@ViewBag.HotelName</a></p> }
+@using (Html.BeginForm("Save", "Rooms", new { area = "Admin" }, FormMethod.Post)) { @Html.AntiForgeryToken() @Html.HiddenFor(m => m.Id) @Html.HiddenFor(m => m.HotelId) @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+<div class="panel mb-3"><div class="row g-3">
+  <div class="col-md-6"><label class="form-label" for="TenPhong">Tên loại phòng</label>@Html.TextBoxFor(m => m.TenPhong, new { @class = "form-control" })@Html.ValidationMessageFor(m => m.TenPhong)</div>
+  <div class="col-md-6"><label class="form-label" for="LoaiPhong">Loại phòng</label>@Html.TextBoxFor(m => m.LoaiPhong, new { @class = "form-control" })</div>
+  <div class="col-md-3"><label class="form-label" for="SoNguoiToiDa">Sức chứa tối đa</label>@Html.TextBoxFor(m => m.SoNguoiToiDa, new { @class = "form-control", type = "number", min = 1 })@Html.ValidationMessageFor(m => m.SoNguoiToiDa)</div>
+  <div class="col-md-3"><label class="form-label" for="SoGiuong">Số giường</label>@Html.TextBoxFor(m => m.SoGiuong, new { @class = "form-control", type = "number", min = 1 })</div>
+  <div class="col-md-3"><label class="form-label" for="DienTich">Diện tích (m²)</label>@Html.TextBoxFor(m => m.DienTich, new { @class = "form-control" })</div>
+  <div class="col-md-3"><label class="form-label" for="SoLuong">Số lượng phòng</label>@Html.TextBoxFor(m => m.SoLuong, new { @class = "form-control", type = "number", min = 0 })@Html.ValidationMessageFor(m => m.SoLuong)</div>
+  <div class="col-md-4"><label class="form-label" for="GiaPhong">Giá cơ bản (₫/đêm)</label>@Html.TextBoxFor(m => m.GiaPhong, new { @class = "form-control", type = "number", min = 0, step = 1000 })@Html.ValidationMessageFor(m => m.GiaPhong)</div>
+  <div class="col-12"><label class="form-label" for="MoTa">Mô tả</label>@Html.TextAreaFor(m => m.MoTa, 3, 40, new { @class = "form-control" })</div>
+  <div class="col-12"><div class="form-check"><input class="form-check-input" type="checkbox" id="TrangThai" name="TrangThai" value="true" @(Model.TrangThai ? "checked" : "") /><input type="hidden" name="TrangThai" value="false" /><label class="form-check-label" for="TrangThai">Đang mở bán</label></div></div>
+</div><button class="btn btn-primary mt-3" type="submit">Lưu</button> <a class="btn btn-ghost mt-3" href="@Url.Action("Index", new { hotelId = Model.HotelId })">Quay lại</a></div> }
+
+@if (Model.Id != 0) {
+<div class="row g-3 mb-3">
+ <div class="col-lg-6"><div class="panel h-100"><h2>Ngừng bán / bảo trì</h2>
+  @using (Html.BeginForm("Block", "Rooms", new { area = "Admin" }, FormMethod.Post, new { @class = "row g-2 mb-2" })) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" />
+   <div class="col-6"><label class="form-label small" for="bf">Từ ngày</label><input id="bf" type="date" name="from" class="form-control" required /></div><div class="col-6"><label class="form-label small" for="bt">Đến ngày (không gồm)</label><input id="bt" type="date" name="to" class="form-control" required /></div>
+   <div class="col-4"><label class="form-label small" for="bq">Số phòng</label><input id="bq" type="number" name="qty" min="1" value="1" class="form-control" /></div><div class="col-8"><label class="form-label small" for="br">Lý do</label><input id="br" name="reason" class="form-control" maxlength="200" /></div>
+   <div class="col-12"><button class="btn btn-primary btn-sm" type="submit">Thêm</button></div> }
+  <ul class="list-unstyled small mb-0">@foreach (var b in blocks) { <li class="d-flex justify-content-between border-top py-1"><span>@(((DateTime)b.TuNgay).ToString("dd/MM/yyyy")) → @(((DateTime)b.DenNgay).ToString("dd/MM/yyyy")) · @b.SoLuong phòng · @b.LyDo</span>
+    @using (Html.BeginForm("Unblock", "Rooms", new { area = "Admin" }, FormMethod.Post, new { data_confirm = "Bỏ chặn khoảng này?" })) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="blockId" value="@b.MaNgungBan" /><button class="btn btn-link btn-sm p-0 text-danger" type="submit">Bỏ</button> }</li> }</ul></div></div>
+ <div class="col-lg-6"><div class="panel h-100"><h2>Giá theo ngày</h2>
+  @using (Html.BeginForm("SetPrice", "Rooms", new { area = "Admin" }, FormMethod.Post, new { @class = "row g-2 mb-2" })) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" />
+   <div class="col-6"><label class="form-label small" for="pf">Từ ngày</label><input id="pf" type="date" name="from" class="form-control" required /></div><div class="col-6"><label class="form-label small" for="pt">Đến ngày (gồm)</label><input id="pt" type="date" name="to" class="form-control" required /></div>
+   <div class="col-12"><label class="form-label small" for="pp">Giá (₫/đêm) — để trống để xóa giá riêng</label><input id="pp" type="number" name="price" min="0" step="1000" class="form-control" /></div>
+   <div class="col-12"><button class="btn btn-primary btn-sm" type="submit">Áp dụng</button></div> }
+  <div class="small text-muted" style="max-height:130px;overflow:auto">@foreach (var p in prices) { <div>@(((DateTime)p.Ngay).ToString("dd/MM/yyyy")): <strong>@Html.Money((decimal)p.Gia)</strong></div> }</div></div></div>
+</div>
+<div class="panel"><h2>Ảnh phòng (@images.Count)</h2>
+  @using (Html.BeginForm("UploadImage", "Rooms", new { area = "Admin" }, FormMethod.Post, new { enctype = "multipart/form-data", @class = "row g-2 mb-3" })) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" />
+    <div class="col-md-4"><input type="file" name="file" accept="image/jpeg,image/png,image/webp" required class="form-control" aria-label="Tệp ảnh" /></div><div class="col-md-3"><input name="caption" class="form-control" placeholder="Mô tả / alt" maxlength="255" /></div>
+    <div class="col-md-3"><select name="kind" class="form-select" aria-label="Loại ảnh">@foreach (var k in new[] { "Phòng ngủ", "Phòng tắm", "Phòng khách", "View", "Tiện nghi" }) { <option>@k</option> }</select></div><div class="col-md-2"><button class="btn btn-primary w-100" type="submit">Tải lên</button></div> }
+  <div class="thumb-grid">@foreach (var im in images) {
+   <div class="it"><img src="@Html.Img(im.Url)" alt="@im.Caption" loading="lazy" style="@(im.Visible ? "" : "opacity:.4")" /><div class="p-2 small">
+    @using (Html.BeginForm("ImageAction", "Rooms", new { area = "Admin" }, FormMethod.Post)) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="imageId" value="@im.Id" /><input type="hidden" name="op" value="save" />
+      <input name="caption" value="@im.Caption" class="form-control form-control-sm mb-1" placeholder="Mô tả" aria-label="Mô tả" /><select name="kind" class="form-select form-select-sm mb-1" aria-label="Loại">@foreach (var k in new[] { "Phòng ngủ", "Phòng tắm", "Phòng khách", "View", "Tiện nghi", "Khu vực chung", "Mặt tiền" }) { <option @(k == im.Kind ? "selected" : "")>@k</option> }</select>
+      <div class="input-group input-group-sm"><span class="input-group-text">Thứ tự</span><input name="order" type="number" value="@im.Order" class="form-control" /><button class="btn btn-ghost no-loading" type="submit">Lưu</button></div> }
+    <div class="d-flex gap-1 flex-wrap mt-1">
+     @if (im.IsCover) { <span class="chip teal">Ảnh đại diện</span> } else { using (Html.BeginForm("ImageAction", "Rooms", new { area = "Admin" }, FormMethod.Post)) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="imageId" value="@im.Id" /><button class="btn btn-ghost btn-sm" name="op" value="cover" type="submit">Đặt đại diện</button> } }
+     @using (Html.BeginForm("ImageAction", "Rooms", new { area = "Admin" }, FormMethod.Post)) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="imageId" value="@im.Id" /><button class="btn btn-ghost btn-sm" name="op" value="toggle" type="submit">@(im.Visible ? "Ẩn" : "Hiện")</button> }
+     @if (!im.IsCover) { using (Html.BeginForm("ImageAction", "Rooms", new { area = "Admin" }, FormMethod.Post, new { data_confirm = "Xóa ảnh này?" })) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="imageId" value="@im.Id" /><button class="btn btn-outline-danger btn-sm" name="op" value="delete" type="submit">Xóa</button> } }
+   </div></div></div> }</div></div> }

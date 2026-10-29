@@ -1,0 +1,11 @@
+@model TravelHub.Areas.Admin.Controllers.DestinationEditModel
+<h1>@ViewBag.Title</h1>
+@using (Html.BeginForm("Save", "Destinations", new { area = "Admin" }, FormMethod.Post, new { enctype = "multipart/form-data" })) { @Html.AntiForgeryToken() @Html.HiddenFor(m => m.Id) @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+<div class="panel"><div class="row g-3">
+ <div class="col-md-6"><label class="form-label" for="TenDiaDiem">Tên điểm đến</label>@Html.TextBoxFor(m => m.TenDiaDiem, new { @class = "form-control" })@Html.ValidationMessageFor(m => m.TenDiaDiem)</div>
+ <div class="col-md-3"><label class="form-label" for="ThanhPho">Tỉnh/Thành phố</label>@Html.TextBoxFor(m => m.ThanhPho, new { @class = "form-control" })</div>
+ <div class="col-md-3"><label class="form-label" for="PhongCach">Phong cách</label>@Html.TextBoxFor(m => m.PhongCach, new { @class = "form-control" })</div>
+ <div class="col-12"><label class="form-label" for="MoTa">Mô tả</label>@Html.TextAreaFor(m => m.MoTa, 4, 40, new { @class = "form-control" })</div>
+ <div class="col-md-6"><label class="form-label" for="file">Ảnh (JPG/PNG/WebP ≤ 4 MB)</label><input type="file" id="file" name="file" accept="image/jpeg,image/png,image/webp" class="form-control" />@if (!string.IsNullOrEmpty(Model.HinhAnh)) { <img src="@Html.Img(Model.HinhAnh)" alt="" height="60" class="mt-2 rounded" /> }</div>
+ <div class="col-md-6 d-flex align-items-end"><div class="form-check"><input class="form-check-input" type="checkbox" id="TrangThai" name="TrangThai" value="true" @(Model.TrangThai ? "checked" : "") /><input type="hidden" name="TrangThai" value="false" /><label class="form-check-label" for="TrangThai">Hiển thị trên website</label></div></div>
+</div><button class="btn btn-primary mt-3" type="submit">Lưu</button> <a class="btn btn-ghost mt-3" href="@Url.Action("Index")">Quay lại</a></div> }

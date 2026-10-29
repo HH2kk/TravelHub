@@ -1,0 +1,11 @@
+@model List<DestinationItem>
+@{ var styles = (Dictionary<string, int>)ViewBag.Styles; var regions = (Dictionary<string, int>)ViewBag.Regions; string st = ViewBag.Style, rg = ViewBag.Region; }
+<div class="container py-4"><h1 class="h2 mb-1">Điểm đến</h1><p class="text-muted">Chọn điểm đến để xem chỗ nghỉ, địa điểm tham quan và cẩm nang.</p>
+  <div class="d-flex flex-wrap gap-2 mb-4" role="group" aria-label="Bộ lọc điểm đến">
+    <a class="chip-filter @(string.IsNullOrEmpty(st) && string.IsNullOrEmpty(rg) ? "on" : "")" href="@Url.Action("Index")">Tất cả</a>
+    @foreach (var s in styles) { <a class="chip-filter @(st == s.Key ? "on" : "")" href="@Url.Action("Index", new { style = s.Key, region = rg })">@s.Key <small>@s.Value</small></a> }
+    <span class="vr mx-1"></span>
+    @foreach (var r in regions) { <a class="chip-filter @(rg == r.Key ? "on" : "")" href="@Url.Action("Index", new { style = st, region = r.Key })">Miền @r.Key <small>@r.Value</small></a> }
+  </div>
+  @if (!Model.Any()) { <div class="empty">@Html.Icon("map-pin", 36)<p class="mb-2">Không có điểm đến phù hợp bộ lọc.</p><a class="btn btn-primary" href="@Url.Action("Index")">Xem tất cả điểm đến</a></div> }
+  <div class="row g-3">@foreach (var d in Model) { <div class="col-6 col-md-4 col-lg-3"><a class="dest-card" href="@Url.Action("Details", new { id = d.Id })"><img src="@Html.Img(d.ImageUrl)" alt="@d.Name" loading="lazy" /><div class="cap"><h3>@d.Name</h3><small>@d.TravelStyle@(string.IsNullOrEmpty(d.Region) ? "" : " · Miền " + d.Region) · @(d.HotelCount > 0 ? d.HotelCount + " chỗ nghỉ" : "sắp có chỗ nghỉ")</small></div></a></div> }</div></div>

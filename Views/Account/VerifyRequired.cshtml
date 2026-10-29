@@ -1,0 +1,3 @@
+<div class="auth-wrap"><div class="box text-center">@Html.Icon("shield", 40)<h1 class="h4 mt-2">Cần xác minh email</h1>
+<p>Để bảo vệ tài khoản và đơn đặt phòng, bạn cần xác minh email trước khi đặt phòng hoặc thanh toán.</p>
+@using (Html.BeginForm("ResendVerification", "Account", FormMethod.Post)) { @Html.AntiForgeryToken() <button class="btn btn-primary" type="submit">Gửi lại email xác minh</button> }</div></div>

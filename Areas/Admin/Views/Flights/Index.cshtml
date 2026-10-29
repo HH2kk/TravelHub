@@ -1,0 +1,27 @@
+@model List<FlightRow>
+@{ var f = (FlightFilter)ViewBag.F; var airlines = (List<dynamic>)ViewBag.Airlines; bool isAdmin = Auth.Current.Role == AppRoles.Admin; }
+<div class="ph"><div><h1>Chuyến bay</h1><div class="sub">Lịch bay, tải ghế và danh sách hành khách theo từng chuyến.</div></div>
+  @if (isAdmin) { <a class="btn btn-primary" href="@Url.Action("Create")">@Html.Icon("plus", 16) Thêm chuyến bay</a> }</div>
+<form method="get" class="filters-bar row g-2">
+  <div class="col-md-4"><input class="form-control" name="q" placeholder="Mã chuyến, sân bay, thành phố…" value="@f.q" aria-label="Tìm" /></div>
+  <div class="col-md-2"><select class="form-select" name="airline" aria-label="Hãng"><option value="">Mọi hãng</option>@foreach (var a in airlines) { <option value="@a.MaIATA" @((string)a.MaIATA == f.airline ? "selected" : "")>@a.TenHangBay</option> }</select></div>
+  <div class="col-md-2"><select class="form-select" name="status" aria-label="Trạng thái"><option value="">Mọi trạng thái</option>@foreach (var s in FlightInfo.Statuses) { <option value="@s" @(s == f.status ? "selected" : "")>@FlightInfo.StatusText(s)</option> }</select></div>
+  <div class="col-md-2"><select class="form-select" name="when" aria-label="Thời gian"><option value="">Mọi thời điểm</option><option value="upcoming" @(f.when == "upcoming" ? "selected" : "")>Sắp khởi hành</option><option value="today" @(f.when == "today" ? "selected" : "")>Hôm nay</option><option value="past" @(f.when == "past" ? "selected" : "")>Đã khởi hành</option></select></div>
+  <div class="col-md-2"><button class="btn btn-primary w-100" type="submit">Lọc</button></div>
+</form>
+<div class="panel"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Chuyến</th><th>Hành trình</th><th>Khởi hành</th><th>Máy bay</th><th style="min-width:140px">Tải ghế</th><th class="text-end">Giá từ</th><th>Vé</th><th>Trạng thái</th></tr></thead><tbody>
+@foreach (var x in Model)
+{
+  <tr>
+    <td><a class="rowlink" href="@Url.Action("Details", new { id = x.Id })">@Html.AirlineBadge(x.AirlineIata)<span><strong class="mono">@x.Code</strong><span class="d-block small text-muted">@x.AirlineName</span></span></a></td>
+    <td><div class="route"><div class="pt"><b>@x.FromCode</b><small>@x.FromName</small></div><div class="ln">@Html.Icon("plane", 13)</div><div class="pt"><b>@x.ToCode</b><small>@x.ToName</small></div></div></td>
+    <td>@x.Departs.ToString("HH:mm")<div class="small text-muted">@x.Departs.ToString("dd/MM/yyyy") · @FlightInfo.Duration(x.Departs, x.Arrives)</div></td>
+    <td class="small">@x.Aircraft<div class="text-muted">@(string.IsNullOrEmpty(x.Gate) ? "" : "Cửa " + x.Gate)</div></td>
+    <td><div class="d-flex align-items-center gap-2">@Html.LoadBar(x.LoadPct)<span class="small fw-bold">@x.LoadPct%</span></div><div class="small text-muted">@x.Sold/@x.Seats ghế</div></td>
+    <td class="text-end">@Html.Money(x.Price)@if (x.BusinessPrice.HasValue) { <div class="small text-muted">TG @Html.Short(x.BusinessPrice.Value)</div> }</td>
+    <td class="small">@x.TicketsActive@if (x.TicketsCancelled > 0) { <span class="text-muted"> / hủy @x.TicketsCancelled</span> }</td>
+    <td>@Html.FlightBadge(x.Status)@if (!x.Active) { <div><span class="chip gray mt-1">Ngừng bán</span></div> }</td>
+  </tr>
+}
+@if (!Model.Any()) { <tr><td colspan="8" class="empty">Không có chuyến bay phù hợp.</td></tr> }
+</tbody></table></div>@Html.Partial("_Pager")</div>

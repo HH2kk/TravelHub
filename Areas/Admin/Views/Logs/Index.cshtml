@@ -1,0 +1,5 @@
+@model List<dynamic>
+<h1>Nhật ký hoạt động</h1>
+<form method="get" class="filters-bar d-flex gap-2"><input class="form-control" style="max-width:360px" name="q" value="@ViewBag.Q" placeholder="Hành động, người dùng, nội dung" aria-label="Tìm" /><button class="btn btn-primary" type="submit">Tìm</button></form>
+<div class="panel"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Thời gian (UTC)</th><th>Người thực hiện</th><th>Hành động</th><th>Đối tượng</th><th>Chi tiết</th><th>IP</th></tr></thead><tbody>
+@foreach (var l in Model) { <tr><td class="small">@(((DateTime)l.NgayTao).ToString("dd/MM/yyyy HH:mm:ss"))</td><td>@l.TenDangNhap</td><td><code>@l.HanhDong</code></td><td>@l.DoiTuong @l.DoiTuongId</td><td class="small">@l.MoTa</td><td class="small">@l.DiaChiIP</td></tr> }</tbody></table></div>@Html.Partial("_Pager")</div>

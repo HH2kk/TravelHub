@@ -1,0 +1,44 @@
+@model TicketRow
+@{ bool open = Model.StatusCode == "Booked" || Model.StatusCode == "CheckedIn"; }
+<div class="ph"><div><div class="crumbs">@Html.ActionLink("Vé máy bay", "Index") /</div><h1><span class="mono">@Model.Code</span> @if (Model.IsSample) { <span class="sample">dữ liệu mẫu</span> }</h1></div>@Html.TicketBadge(Model.Status, Model.StatusCode)</div>
+
+<div class="pass mb-3 @(Model.StatusCode == "Cancelled" ? "cancelled" : "")"><div class="main">
+  <div class="head"><span class="d-flex align-items-center gap-2">@Html.AirlineBadge(Model.AirlineIata)<strong>@Model.AirlineName</strong> <span class="mono text-muted">@Model.FlightCode</span></span><span class="chip">@Model.Class</span></div>
+  <div class="big"><div class="pt"><b>@Model.FromCode</b><small>@Model.FromName</small></div><div class="ln">@Html.Icon("plane", 18)<span>@FlightInfo.Duration(Model.Departs, Model.Arrives)</span></div><div class="pt text-end"><b>@Model.ToCode</b><small>@Model.ToName</small></div></div>
+  <div class="grid4">
+    <div><label>Hành khách</label><b>@Model.Passenger</b></div>
+    <div><label>Khởi hành</label><b>@Model.Departs.ToString("HH:mm dd/MM")</b></div>
+    <div><label>Hạ cánh</label><b>@Model.Arrives.ToString("HH:mm dd/MM")</b></div>
+    <div><label>Cửa ra</label><b>@(string.IsNullOrEmpty(Model.Gate) ? "—" : Model.Gate)</b></div>
+  </div></div>
+  <div class="stub"><div><label>Ghế</label><b>@Model.Seat</b><label class="mt-2">Mã vé</label><span class="code">@Model.Code</span></div><div class="bars"></div></div></div>
+
+<div class="row g-3"><div class="col-lg-8">
+  <div class="panel mb-3"><h2>Thông tin vé</h2><dl class="kv">
+    <dt>Hành khách</dt><dd>@Model.Passenger</dd>
+    <dt>Số giấy tờ</dt><dd class="mono">@Model.DocNo</dd>
+    <dt>Hạng ghế / ghế</dt><dd>@Model.Class · @Model.Seat</dd>
+    <dt>Hành lý</dt><dd>@(Model.BaggageKg.HasValue ? Model.BaggageKg + " kg" : "—")</dd>
+    <dt>Giá vé</dt><dd>@Html.Money(Model.Price)</dd>
+    <dt>Liên hệ</dt><dd>@Model.ContactEmail · @Model.ContactPhone</dd>
+    <dt>Máy bay</dt><dd>@Model.Aircraft</dd>
+    <dt>Tình trạng chuyến</dt><dd>@Html.FlightBadge(Model.FlightStatus) <a class="small ms-1" href="@Url.Action("Details", "Flights", new { id = Model.FlightId })">Xem chuyến bay →</a></dd>
+    <dt>Đặt lúc</dt><dd>@Html.DateTimeText(Model.BookedAt)</dd>
+    @if (Model.UpdatedAt.HasValue) { <dt>Cập nhật</dt><dd>@Html.DateTimeText(Model.UpdatedAt.Value)</dd> }
+    @if (!string.IsNullOrEmpty(Model.CancelReason)) { <dt>Lý do hủy</dt><dd>@Model.CancelReason</dd> }
+  </dl></div>
+  <div class="panel"><h2>Khách đặt vé</h2>
+    <a class="rowlink" href="@Url.Action("Details", "Customers", new { id = Model.CustomerId })">@Html.Avatar(Model.CustomerName, 44)<span><strong>@Model.CustomerName</strong><span class="d-block small text-muted">@Model.CustomerEmail</span></span><span class="ms-auto small">Xem hồ sơ 360° →</span></a>
+  </div>
+</div><div class="col-lg-4">
+  <div class="panel mb-3"><h2>Thao tác</h2><div class="d-grid gap-2">
+    @if (Model.StatusCode == "Booked") { using (Html.BeginForm("CheckIn", "Tickets", new { area = "Admin" }, FormMethod.Post, new { data_confirm = "Đánh dấu hành khách đã làm thủ tục?" })) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-primary w-100" type="submit">@Html.Icon("check-circle", 16) Làm thủ tục</button> } }
+    <a class="btn btn-ghost" href="@Url.Action("Index", "Tickets", new { flight = Model.FlightId })">@Html.Icon("users", 16) Hành khách cùng chuyến</a>
+    <a class="btn btn-ghost" href="@Url.Action("Index", "Tickets", new { customer = Model.CustomerId })">@Html.Icon("ticket", 16) Vé khác của khách</a>
+  </div></div>
+  @if (open) { <div class="panel"><h2>Hủy vé</h2>
+    @using (Html.BeginForm("Cancel", "Tickets", new { area = "Admin" }, FormMethod.Post, new { data_confirm = "Hủy vé này? Ghế sẽ được trả lại cho chuyến bay." })) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" />
+      <label class="form-label small" for="reason">Lý do (bắt buộc)</label><input id="reason" name="reason" required class="form-control mb-2" maxlength="250" />
+      <button class="btn btn-outline-danger w-100" type="submit">Hủy vé</button> }
+    <div class="form-text mt-2">Vé chưa gắn thanh toán trực tuyến nên việc hoàn tiền (nếu có) xử lý ngoài hệ thống.</div></div> }
+</div></div>

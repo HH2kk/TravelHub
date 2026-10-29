@@ -1,0 +1,17 @@
+@model List<TravelHub.Services.HotelDetail>
+<div class="container py-4"><h1 class="h3 mb-3">So sánh chỗ nghỉ</h1>
+@if (Model.Count < 2) { <div class="empty">@Html.Icon("search", 36)<p>Chọn ít nhất 2 chỗ nghỉ (từ danh sách yêu thích) để so sánh.</p><a class="btn btn-primary" href="@Url.Action("Index", "Favorites")">Về danh sách yêu thích</a></div> }
+else {
+<div class="table-responsive"><table class="table table-bordered bg-white align-middle">
+  <thead><tr><th scope="col"></th>@foreach (var h in Model) { <th scope="col" style="min-width:200px"><img src="@Html.Img(h.CoverImageUrl)" alt="@h.Name" class="w-100 rounded mb-2" style="aspect-ratio:4/3;object-fit:cover" /><a href="@Url.Action("Details", "Hotels", new { id = h.Id })">@h.Name</a></th> }</tr></thead>
+  <tbody>
+    <tr><th scope="row">Giá từ / đêm</th>@foreach (var h in Model) { <td class="fw-bold">@Html.Money(h.PriceFrom)</td> }</tr>
+    <tr><th scope="row">Hạng sao</th>@foreach (var h in Model) { <td>@Html.Stars(h.Stars)</td> }</tr>
+    <tr><th scope="row">Đánh giá</th>@foreach (var h in Model) { <td>@(h.ReviewCount > 0 ? h.Rating.ToString("0.0") + "/5 (" + h.ReviewCount + ")" : "Chưa có")</td> }</tr>
+    <tr><th scope="row">Loại hình</th>@foreach (var h in Model) { <td>@h.PropertyType</td> }</tr>
+    <tr><th scope="row">Điểm đến</th>@foreach (var h in Model) { <td>@h.DestinationName</td> }</tr>
+    <tr><th scope="row">Bữa sáng</th>@foreach (var h in Model) { <td>@(h.BreakfastIncluded ? "Có" : "Không")</td> }</tr>
+    <tr><th scope="row">Chính sách hủy</th>@foreach (var h in Model) { <td class="small">@h.CancelPolicyText</td> }</tr>
+    <tr><th scope="row">Tiện nghi</th>@foreach (var h in Model) { <td class="small">@string.Join(", ", h.AmenityList.Select(a => a.Name))</td> }</tr>
+  </tbody></table></div> }
+</div>

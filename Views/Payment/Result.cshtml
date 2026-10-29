@@ -1,0 +1,8 @@
+@model BookingDetail
+@{ bool ok = Model != null && (Model.StatusCode == "Paid" || Model.StatusCode == "CheckedIn" || Model.StatusCode == "Completed"); }
+<div class="container py-5" style="max-width:640px"><div class="box text-center">
+ @if (Model == null) { @Html.Icon("alert", 44)<h1 class="h4 mt-2">Đang xác minh giao dịch</h1><p>Chúng tôi chưa thể hiển thị chi tiết đơn (hãy đăng nhập đúng tài khoản đã đặt phòng). Kết quả cuối cùng được cập nhật từ cổng thanh toán; bạn sẽ nhận email khi giao dịch được xác nhận.</p><a class="btn btn-primary" href="@Url.Action("My", "Booking")">Đặt phòng của tôi</a> }
+ else if (ok) { <div style="color:var(--teal)">@Html.Icon("check", 48)</div><h1 class="h3 mt-2">Thanh toán thành công</h1><p>Đặt phòng <strong>@Model.Code</strong> tại <strong>@Model.HotelName</strong> đã được xác nhận. Email xác nhận và biên nhận đã được gửi tới @Model.GuestEmail.</p><a class="btn btn-primary" href="@Url.Action("Details", "Booking", new { id = Model.Id })">Xem chi tiết đặt phòng</a> }
+ else if (Model.IsHoldActive) { <div style="color:var(--bad)">@Html.Icon("alert", 48)</div><h1 class="h3 mt-2">Thanh toán chưa thành công</h1><p>Giao dịch chưa hoàn tất. Phòng vẫn được giữ cho bạn, bạn có thể thử thanh toán lại.</p><a class="btn btn-primary" href="@Url.Action("Details", "Booking", new { id = Model.Id })">Thanh toán lại</a> }
+ else { @Html.Icon("alert", 48)<h1 class="h3 mt-2">Giao dịch chưa được xác nhận</h1><p>Trạng thái đơn: @Model.Status. Nếu bạn đã bị trừ tiền, hệ thống sẽ đối soát và hoàn lại hoặc xác nhận đơn; vui lòng liên hệ hỗ trợ kèm mã <strong>@Model.Code</strong>.</p><a class="btn btn-primary" href="@Url.Action("Details", "Booking", new { id = Model.Id })">Xem đơn</a> }
+</div></div>

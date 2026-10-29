@@ -1,0 +1,6 @@
+@model List<dynamic>
+<h1>Liên hệ &amp; hỗ trợ</h1>
+<div class="panel"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Thời gian</th><th>Người gửi</th><th>Tiêu đề / nội dung</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+@foreach (var m in Model) { <tr><td class="small">@(((DateTime)m.NgayTao).ToString("dd/MM/yyyy HH:mm"))</td><td>@m.HoTen<div class="small"><a href="mailto:@m.Email">@m.Email</a></div></td><td><strong>@m.TieuDe</strong><div class="small">@m.NoiDung</div></td><td><span class="badge-st @((string)m.TrangThai == "NEW" ? "warn" : "ok")">@m.TrangThai</span></td>
+ <td>@if ((string)m.TrangThai == "NEW") { using (Html.BeginForm("Resolve", "Inbox", new { area = "Admin" }, FormMethod.Post)) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@m.MaLienHe" /><button class="btn btn-ghost btn-sm" type="submit">Đã xử lý</button> } }</td></tr> }
+@if (!Model.Any()) { <tr><td colspan="5" class="text-center text-muted py-4">Chưa có liên hệ.</td></tr> }</tbody></table></div></div>

@@ -1,0 +1,33 @@
+@model BookingDetail
+@{ string receipt = ViewBag.ReceiptNo as string; bool paid = Model.StatusCode == "Paid" || Model.StatusCode == "CheckedIn" || Model.StatusCode == "Completed"; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><h1 class="mb-0">@Model.Code</h1>@Html.StatusBadge(Model.Status)</div>
+<div class="row g-3"><div class="col-lg-8">
+  <div class="panel mb-3"><h2>Thông tin đặt phòng</h2><dl class="row small mb-0">
+    <dt class="col-sm-3">Khách</dt><dd class="col-sm-9">@Model.GuestName · @Model.GuestEmail · @Model.GuestPhone <a class="ms-1" href="@Url.Action("Details", "Customers", new { id = Model.CustomerId })">Hồ sơ khách 360° →</a></dd>
+    <dt class="col-sm-3">Chỗ nghỉ</dt><dd class="col-sm-9">@Model.HotelName — @Model.HotelAddress</dd>
+    <dt class="col-sm-3">Phòng</dt><dd class="col-sm-9">@Model.RoomName × @Model.Quantity</dd>
+    <dt class="col-sm-3">Lưu trú</dt><dd class="col-sm-9">@Html.Date(Model.CheckIn) → @Html.Date(Model.CheckOut) (@Model.Nights đêm) · @Model.Adults NL, @Model.Children TE</dd>
+    <dt class="col-sm-3">Yêu cầu</dt><dd class="col-sm-9">@(Model.Note ?? "—")</dd>
+    <dt class="col-sm-3">Chính sách hủy</dt><dd class="col-sm-9">@Model.CancelPolicyText</dd>
+    <dt class="col-sm-3">Tổng / đã thu</dt><dd class="col-sm-9"><strong>@Html.Money(Model.Total)</strong> / @Html.Money(Model.PaidAmount)</dd>
+    @if (!string.IsNullOrEmpty(Model.CancelReason)) { <dt class="col-sm-3">Lý do hủy</dt><dd class="col-sm-9">@Model.CancelReason</dd> }</dl></div>
+  <div class="panel mb-3"><h2>Thanh toán</h2><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Thời gian</th><th>Cổng</th><th>Mã tham chiếu</th><th class="text-end">Số tiền</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+    @foreach (var p in Model.Payments) { <tr><td>@Html.DateTimeText(p.NgayThanhToan ?? p.NgayTao)</td><td>@p.PhuongThuc</td><td class="small">@(p.MaThamChieuVNPAY ?? p.MaGiaoDich)</td><td class="text-end">@Html.Money(p.SoTien)</td><td>@Html.PayBadge(p.TrangThai)</td><td><a href="@Url.Action("Callbacks", "Payments", new { id = p.MaThanhToan })">Nhật ký</a></td></tr> }
+    @if (!Model.Payments.Any()) { <tr><td colspan="6" class="text-muted">Chưa có giao dịch.</td></tr> }</tbody></table></div>
+    @if (Model.Refund != null) { <div class="alert alert-info mt-2 mb-0 small">Hoàn tiền: @Html.Money(Model.Refund.SoTien) — <strong>@Model.Refund.TrangThai</strong>. <a href="@Url.Action("Index", "Refunds")">Xử lý</a></div> }</div>
+  <div class="panel"><h2>Lịch sử trạng thái</h2><ul class="timeline mb-0">@foreach (var h in Model.History) { <li><strong>@(h.TuTrangThai == null ? "" : h.TuTrangThai + " → ")@h.DenTrangThai</strong> <span class="small text-muted">@Html.DateTimeText(h.NgayTao) · @(h.NguoiThucHien ?? "hệ thống")</span>@if (!string.IsNullOrEmpty(h.LyDo)) { <div class="small">@h.LyDo</div> }</li> }</ul></div>
+</div><div class="col-lg-4">
+  <div class="panel mb-3"><h2>Thao tác</h2><div class="d-grid gap-2">
+    @if (Model.StatusCode == "Paid") { using (Html.BeginForm("Transition", "Bookings", new { area = "Admin" }, FormMethod.Post, new { data_confirm = "Xác nhận khách đã nhận phòng?" })) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="to" value="checkin" /><button class="btn btn-primary w-100" type="submit">Đánh dấu đã nhận phòng</button> } }
+    @if (Model.StatusCode == "CheckedIn") { using (Html.BeginForm("Transition", "Bookings", new { area = "Admin" }, FormMethod.Post, new { data_confirm = "Hoàn thành kỳ lưu trú?" })) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="to" value="complete" /><button class="btn btn-teal w-100" type="submit">Hoàn thành lưu trú</button> } }
+    @if (paid) { using (Html.BeginForm("ResendEmail", "Bookings", new { area = "Admin" }, FormMethod.Post)) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-ghost w-100" type="submit">@Html.Icon("mail", 16) Gửi lại email xác nhận</button> } }
+    @if (!string.IsNullOrEmpty(receipt) && paid) { <a class="btn btn-ghost" href="@Url.Action("Receipt", new { no = receipt })">@Html.Icon("download", 16) Biên nhận PDF</a> }
+  </div></div>
+  @if (Model.StatusCode == "Pending" || Model.StatusCode == "Paid") {
+  <div class="panel mb-3"><h2>Hủy đặt phòng</h2>
+    @using (Html.BeginForm("Cancel", "Bookings", new { area = "Admin" }, FormMethod.Post, new { data_confirm = "Hủy đơn này? Thao tác không thể hoàn tác." })) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" />
+      <label class="form-label small" for="reason">Lý do (bắt buộc)</label><input id="reason" name="reason" required class="form-control mb-2" maxlength="300" />
+      if (Auth.Current.Role == AppRoles.Admin && Model.PaidAmount > 0) { <div class="form-check mb-2"><input class="form-check-input" type="checkbox" id="fr" name="fullRefund" value="true" /><label class="form-check-label small" for="fr">Hoàn 100% (bỏ qua chính sách hủy)</label></div> }
+      <button class="btn btn-outline-danger w-100" type="submit">Hủy đơn</button> }</div> }
+  <div class="panel"><h2>Ghi chú nội bộ</h2>@using (Html.BeginForm("Note", "Bookings", new { area = "Admin" }, FormMethod.Post)) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" /><textarea name="note" class="form-control mb-2" rows="4" maxlength="1000">@Model.InternalNote</textarea><button class="btn btn-primary btn-sm" type="submit">Lưu ghi chú</button> }</div>
+</div></div>

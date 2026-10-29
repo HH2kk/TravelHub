@@ -1,0 +1,6 @@
+@{ int total = ViewBag.Total; int page = ViewBag.Page; int size = ViewBag.Size; int pages = (total + size - 1) / size; }
+@if (pages > 1) {
+<nav aria-label="Phân trang"><ul class="pagination pagination-sm justify-content-end mt-3 mb-0">
+ @for (int p = 1; p <= pages; p++) { if (p == 1 || p == pages || Math.Abs(p - page) <= 2) { <li class="page-item @(p == page ? "active" : "")"><a class="page-link" href="@Url.PageUrl(p)">@p</a></li> } else if (Math.Abs(p - page) == 3) { <li class="page-item disabled"><span class="page-link">…</span></li> } }
+</ul></nav> }
+<div class="small text-muted mt-2">Tổng: @total</div>

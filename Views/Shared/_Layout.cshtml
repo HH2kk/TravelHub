@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@(ViewBag.Title == null ? "TravelHub" : ViewBag.Title + " – TravelHub")</title>
+    <meta name="description" content="@(ViewBag.Description ?? "TravelHub – đặt phòng lưu trú và khám phá điểm đến du lịch Việt Nam.")" />
+    <link rel="icon" href="~/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+    @Styles.Render("~/Content/css")
+    @RenderSection("head", required: false)
+</head>
+<body class="@(ViewBag.Hero == true ? "has-hero" : "")">
+    <a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+    @{ var me = ViewBag.Me as UserSession; var ctl = (string)ViewContext.RouteData.Values["controller"]; }
+    <header class="th-header">
+        <nav class="navbar navbar-expand-lg" aria-label="Điều hướng chính">
+            <div class="container">
+                <a class="brand" href="@Url.Action("Index", "Home", new { area = "" })" aria-label="TravelHub – Trang chủ"><span class="mark">@Html.Icon("plane", 18)</span><b style="font-weight:800;color:inherit">Travel<span>Hub</span></b></a>
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Mở menu">@Html.Icon("menu", 24)</button>
+                <div class="collapse navbar-collapse" id="nav">
+                    @Html.Partial("_MainNav", MenuService.Get())
+                    <ul class="navbar-nav align-items-lg-center gap-lg-1">
+                        @{ var um = ViewBag.UserMenu as UserMenu; }
+                        @if (um != null && um.PendingCount > 0 && um.PendingExpires.HasValue)
+                        {
+                            <li><a class="pending-chip" href="@Url.Action("Details", "Booking", new { id = um.PendingBookingId, area = "" })" title="@um.PendingHotel">@Html.Icon("clock", 14) <span class="pc-label">Hoàn tất thanh toán</span> <b data-countdown="@um.PendingExpires.Value.ToString("yyyy-MM-ddTHH:mm:ss")"></b></a></li>
+                        }
+                        <li><a class="nav-link" href="@Url.Action("Index", "Favorites", new { area = "" })">@Html.Icon("heart", 16) Yêu thích@(um != null && um.Favorites > 0 ? Html.Raw(" <span class=\"nbadge\">" + um.Favorites + "</span>") : null)</a></li>
+                        @if (me == null)
+                        {
+                            <li><a class="nav-link" href="@Url.Action("Login", "Account", new { area = "" })">Đăng nhập</a></li>
+                            <li><a class="btn btn-cta ms-lg-2" href="@Url.Action("Index", "Hotels", new { area = "" })">Bắt đầu hành trình</a></li>
+                        }
+                        else
+                        {
+                            <li><a class="btn btn-cta me-lg-2" href="@Url.Action("Index", "Hotels", new { area = "" })">Bắt đầu hành trình</a></li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle user-chip" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span class="avatar">@(string.IsNullOrEmpty(me.FullName) ? "?" : me.FullName.Substring(0, 1).ToUpper())</span><span>@me.FullName</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item d-flex justify-content-between" href="@Url.Action("My", "Booking", new { area = "" })"><span>Đặt phòng của tôi</span>@if (um != null && um.PendingCount > 0) { <span class="nbadge warn">@um.PendingCount chờ</span> }</a></li>
+                                    @if (um != null && um.NextTripDate.HasValue) { <li><a class="dropdown-item small" href="@Url.Action("Details", "Booking", new { id = um.NextTripId, area = "" })">@Html.Icon("plane", 13) Chuyến sắp tới: @um.NextTripHotel · @um.NextTripDate.Value.ToString("dd/MM")</a></li> }
+                                    <li><a class="dropdown-item" href="@Url.Action("Profile", "Account", new { area = "" })">Hồ sơ</a></li>
+                                    <li><a class="dropdown-item" href="@Url.Action("ChangePassword", "Account", new { area = "" })">Đổi mật khẩu</a></li>
+                                    @if (AppRoles.AdminArea.Split(',').Contains(me.Role))
+                                    {
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="@Url.Action("Index", "Dashboard", new { area = "Admin" })">Trang quản trị</a></li>
+                                    }
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        @using (Html.BeginForm("Logout", "Account", new { area = "" }, FormMethod.Post, new { }))
+                                        {
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="dropdown-item no-loading">Đăng xuất</button>
+                                        }
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    @if (me != null && !me.EmailConfirmed && AppRoles.Customer == me.Role)
+    {
+        <div class="bg-warning-subtle border-bottom py-2 text-center small">
+            Email của bạn chưa được xác minh — cần xác minh để đặt phòng và thanh toán.
+            @using (Html.BeginForm("ResendVerification", "Account", new { area = "" }, FormMethod.Post, new { @class = "d-inline" }))
+            {
+                @Html.AntiForgeryToken()
+                <button class="btn btn-link btn-sm p-0 align-baseline" type="submit">Gửi lại email xác minh</button>
+            }
+        </div>
+    }
+
+    <div class="toast-stack" aria-live="polite">@Html.Toasts()</div>
+    <div id="af-token" hidden>@Html.AntiForgeryToken()</div>
+
+    <main id="main">@RenderBody()</main>
+
+    <footer class="th-footer">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <a class="brand" style="color:#fff!important" href="/"><span class="mark" style="background:rgba(255,255,255,.14)">@Html.Icon("plane", 18)</span><b style="font-weight:800">Travel<span>Hub</span></b></a>
+                    <p class="mt-3 mb-0">Hành trình của bạn, bắt đầu từ đây. Đặt phòng lưu trú an toàn, minh bạch giá và chính sách hủy rõ ràng.</p>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <h4>Khám phá</h4>
+                    <ul>
+                        <li><a href="@Url.Action("Index", "Hotels", new { area = "" })">Tìm chỗ nghỉ</a></li>
+                        <li><a href="@Url.Action("Index", "Destinations", new { area = "" })">Điểm đến</a></li>
+                        <li><a href="@Url.Action("Index", "Articles", new { area = "" })">Cẩm nang du lịch</a></li>
+                    </ul>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <h4>Tài khoản</h4>
+                    <ul>
+                        <li><a href="@Url.Action("My", "Booking", new { area = "" })">Đặt phòng của tôi</a></li>
+                        <li><a href="@Url.Action("Index", "Favorites", new { area = "" })">Yêu thích</a></li>
+                        <li><a href="@Url.Action("Profile", "Account", new { area = "" })">Hồ sơ</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-4">
+                    <h4>Hỗ trợ</h4>
+                    <ul>
+                        <li>@Html.Icon("mail", 15) <a href="mailto:@AppConfig.Setting("EmailHoTro", "support@travelhub.vn")">@AppConfig.Setting("EmailHoTro", "support@travelhub.vn")</a></li>
+                        <li><a href="@Url.Action("Index", "Contact", new { area = "" })">Gửi yêu cầu hỗ trợ</a></li>
+                        <li><a href="@Url.Action("Policy", "Home", new { area = "" })">Điều khoản &amp; chính sách hủy</a></li>
+                    </ul>
+                    @using (Html.BeginForm("Subscribe", "Home", new { area = "" }, FormMethod.Post, new { @class = "d-flex gap-2 mt-3" }))
+                    {
+                        @Html.AntiForgeryToken()
+                        <label class="visually-hidden" for="ft-nl">Email nhận ưu đãi</label>
+                        <input id="ft-nl" type="email" name="email" required class="form-control form-control-sm" placeholder="Email nhận ưu đãi" />
+                        <button class="btn btn-cta btn-sm" type="submit">Đăng ký</button>
+                    }
+                </div>
+            </div>
+            <div class="copy">© @DateTime.Now.Year TravelHub. Giá hiển thị bằng VND, đã bao gồm thuế/phí khi thanh toán.</div>
+        </div>
+    </footer>
+
+    <div class="takeoff-fx" aria-hidden="true"><svg width="120" height="120" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" transform="rotate(90 12 12)"/></svg></div>
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/bootstrap")
+    @Scripts.Render("~/bundles/site")
+    @RenderSection("scripts", required: false)
+</body>
+</html>

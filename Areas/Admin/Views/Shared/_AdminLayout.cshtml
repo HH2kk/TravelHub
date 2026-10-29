@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex,nofollow" />
+    <title>@(ViewBag.Title ?? "Quản trị") – TravelHub Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+    @Styles.Render("~/Content/admincss")
+</head>
+<body class="admin">
+    @{
+        var me = Auth.Current; string ctl = (string)ViewContext.RouteData.Values["controller"];
+        bool isAdmin = me.Role == AppRoles.Admin, isStaff = me.Role == AppRoles.Staff || isAdmin, isCm = me.Role == AppRoles.ContentManager || isAdmin;
+        var bd = TravelHub.Services.MenuService.Admin();
+        Func<string, int> badge = c => c == "Bookings" ? bd.PendingBookings : c == "Payments" ? bd.Reconcile : c == "Refunds" ? bd.RefundsOpen : c == "Inbox" ? bd.NewContacts : 0;
+        Func<string, string, string, string, IHtmlString> nav = (c, label, icon, a) =>
+            new HtmlString("<a class='nav " + (ctl == c ? "on" : "") + "' href='" + Url.Action(a ?? "Index", c, new { area = "Admin" }) + "'>" + Html.Icon(icon, 18) + " <span class='flex-grow-1'>" + label + "</span>" + (badge(c) > 0 ? "<span class='abadge'>" + badge(c) + "</span>" : "") + "</a>");
+    }
+    <div class="adm">
+        <aside class="adm-side" id="adm-side" aria-label="Menu quản trị">
+            <a class="brand" href="@Url.Action("Index", "Dashboard", new { area = "Admin" })"><span class="mark">@Html.Icon("plane", 18)</span><span><b>Travel<span>Hub</span></b><small>Trung tâm điều hành</small></span></a>
+            @nav("Dashboard", "Tổng quan", "layout", null)
+            @if (isStaff)
+            {
+                <div class="grp">Vận hành</div>
+                @nav("Bookings", "Đặt phòng", "calendar", null)
+                @nav("Tickets", "Vé máy bay", "ticket", null)
+                @nav("Flights", "Chuyến bay", "plane", null)
+                @nav("Payments", "Thanh toán", "credit-card", null)
+                @nav("Refunds", "Hoàn tiền", "refresh", null)
+                <div class="grp">Khách hàng</div>
+                @nav("Customers", "Hồ sơ khách", "users", null)
+                @nav("Reviews", "Đánh giá", "star", null)
+                @nav("Inbox", "Liên hệ", "message", null)
+            }
+            @if (isAdmin)
+            {
+                <div class="grp">Sản phẩm</div>
+                @nav("Hotels", "Chỗ nghỉ", "building", null)
+                @nav("Rooms", "Loại phòng", "bed", null)
+                @nav("Airlines", "Hãng bay", "briefcase", null)
+            }
+            @if (isCm)
+            {
+                <div class="grp">Nội dung</div>
+                @nav("Destinations", "Điểm đến", "map-pin", null)
+                @nav("Articles", "Bài viết", "newspaper", null)
+            }
+            @if (isAdmin)
+            {
+                <div class="grp">Hệ thống</div>
+                @nav("Users", "Tài khoản", "user", null)
+                @nav("Settings", "Cấu hình", "settings", null)
+                @nav("Logs", "Nhật ký", "file-text", null)
+            }
+            <div class="side-foot"><a class="nav" href="/" target="_blank" rel="noopener">@Html.Icon("search", 18) <span class="flex-grow-1">Xem website</span></a></div>
+        </aside>
+        <div class="adm-main">
+            <div class="adm-top">
+                <div class="d-flex align-items-center gap-2 flex-grow-1">
+                    <button class="btn btn-ghost mobile-menu-btn no-loading" type="button" aria-label="Mở menu" onclick="document.getElementById('adm-side').classList.toggle('open')">@Html.Icon("menu", 18)</button>
+                    @if (isStaff)
+                    {
+                        <form class="gsearch" method="get" action="@Url.Action("Index", "Search", new { area = "Admin" })" role="search">
+                            @Html.Icon("search", 16)
+                            <input id="gs" name="q" type="search" autocomplete="off" placeholder="Tìm mã đặt phòng, mã vé, khách, chuyến bay…" aria-label="Tìm kiếm toàn hệ thống" value="@(ctl == "Search" ? ViewBag.Q : "")" />
+                            <kbd>/</kbd>
+                        </form>
+                    }
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="today d-none d-md-inline">@DateTime.Now.ToString("dddd, dd/MM/yyyy", System.Globalization.CultureInfo.GetCultureInfo("vi-VN"))</span>
+                    <span class="me">@Html.Avatar(me.FullName, 34)<span class="d-none d-sm-block lh-sm"><strong>@me.FullName</strong><small>@me.Role</small></span></span>
+                    @using (Html.BeginForm("Logout", "Account", new { area = "" }, FormMethod.Post)) { @Html.AntiForgeryToken() <button class="btn btn-ghost btn-sm no-loading" type="submit">Đăng xuất</button> }
+                </div>
+            </div>
+            <div class="toast-stack" aria-live="polite">@Html.Toasts()</div>
+            <div class="adm-body">@RenderBody()</div>
+        </div>
+    </div>
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/bootstrap")
+    @Scripts.Render("~/bundles/site")
+    <script>
+        document.addEventListener('keydown', function (e) { if (e.key === '/' && !/input|textarea|select/i.test((document.activeElement || {}).tagName || '')) { var g = document.getElementById('gs'); if (g) { e.preventDefault(); g.focus(); } } });
+    </script>
+    @RenderSection("scripts", required: false)
+</body>
+</html>

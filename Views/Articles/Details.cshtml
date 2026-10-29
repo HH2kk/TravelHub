@@ -1,0 +1,10 @@
+@model ArticleRow
+@{ var hotels = ViewBag.Hotels as List<HotelCard>; }
+<div class="container py-4" style="max-width:860px">
+  <nav aria-label="breadcrumb"><ol class="breadcrumb small"><li class="breadcrumb-item"><a href="@Url.Action("Index")">Cẩm nang</a></li><li class="breadcrumb-item active">@Model.Category</li></ol></nav>
+  <h1 class="h2">@Model.Title</h1><div class="text-muted small mb-3">@Model.Author · @Html.Date(Model.PostedAt) · @Model.Views lượt xem</div>
+  <img src="@Html.Img(Model.ImageUrl)" alt="@Model.Title" class="w-100 rounded mb-4" style="max-height:440px;object-fit:cover" />
+  <p class="lead">@Model.Summary</p>
+  <div>@foreach (var para in (Model.Content ?? "").Split(new[] { "\n\n", "\r\n\r\n" }, StringSplitOptions.RemoveEmptyEntries)) { <p>@para</p> }</div>
+  @if (hotels != null && hotels.Any()) { <h2 class="h4 mt-5">Chỗ nghỉ gợi ý tại @Model.DestinationName</h2><div class="row g-3">@foreach (var h in hotels) { <div class="col-md-4">@Html.Partial("_HotelCard", h)</div> }</div> }
+</div>

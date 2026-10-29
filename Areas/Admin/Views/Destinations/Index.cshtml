@@ -1,0 +1,5 @@
+@model List<dynamic>
+<div class="d-flex justify-content-between align-items-center mb-3"><h1 class="mb-0">Điểm đến</h1><a class="btn btn-primary" href="@Url.Action("Create")">@Html.Icon("plus", 16) Thêm điểm đến</a></div>
+<div class="panel"><div class="tbl-wrap"><table class="tbl"><thead><tr><th></th><th>Tên</th><th>Thành phố</th><th>Phong cách</th><th>Chỗ nghỉ</th><th>Hiển thị</th><th></th></tr></thead><tbody>
+@foreach (var d in Model) { <tr><td><img src="@Html.Img((string)d.HinhAnh)" alt="" width="56" height="40" style="object-fit:cover;border-radius:6px" /></td><td><a href="@Url.Action("Edit", new { id = (int)d.MaDiaDiem })"><strong>@d.TenDiaDiem</strong></a></td><td>@d.ThanhPho</td><td>@d.PhongCach</td><td>@d.KS</td><td><span class="badge-st @((bool)d.TrangThai ? "ok" : "bad")">@((bool)d.TrangThai ? "Hiển thị" : "Ẩn")</span></td>
+ <td>@using (Html.BeginForm("Toggle", "Destinations", new { area = "Admin" }, FormMethod.Post)) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@d.MaDiaDiem" /><button class="btn btn-ghost btn-sm" type="submit">@((bool)d.TrangThai ? "Ẩn" : "Hiện")</button> }</td></tr> }</tbody></table></div></div>

@@ -1,0 +1,84 @@
+@model TravelHub.Controllers.HotelListViewModel
+@{ var c = Model.Criteria; var r = Model.Result; ViewBag.Destinations = Model.Destinations; var favs = ViewBag.FavIds as HashSet<int>; }
+<div class="search-bar-band"><div class="container">@Html.Partial("_SearchForm", c)</div></div>
+<div class="container py-4">
+  @if (Model.Error != null) { <div class="alert alert-warning" role="alert">@Model.Error</div> }
+  <div class="row g-4">
+    <aside class="col-lg-3" aria-label="Bộ lọc">
+      <form method="get" class="filters" id="filter-form">
+        <input type="hidden" name="destinationId" value="@c.DestinationId" />
+        @if (c.CheckIn.HasValue) { <input type="hidden" name="checkIn" value="@c.CheckIn.Value.ToString("yyyy-MM-dd")" /><input type="hidden" name="checkOut" value="@c.CheckOut.Value.ToString("yyyy-MM-dd")" /> }
+        <input type="hidden" name="adults" value="@c.Adults" /><input type="hidden" name="children" value="@c.Children" /><input type="hidden" name="rooms" value="@c.Rooms" />
+        <h3>Tên / khu vực</h3>
+        <input type="search" class="form-control" name="q" value="@c.Q" placeholder="Tên khách sạn, khu vực" />
+        <h3>Giá mỗi đêm (₫)</h3>
+        <div class="d-flex gap-2"><input type="number" min="0" step="50000" class="form-control" name="minPrice" value="@c.MinPrice" placeholder="Từ" aria-label="Giá từ" /><input type="number" min="0" step="50000" class="form-control" name="maxPrice" value="@c.MaxPrice" placeholder="Đến" aria-label="Giá đến" /></div>
+        <h3>Hạng sao</h3>
+        <select name="stars" class="form-select"><option value="">Tất cả</option>@for (int s = 5; s >= 3; s--) { <option value="@s" @(c.MinStars == s ? "selected" : "")>Từ @s sao</option> }</select>
+        <h3>Điểm đánh giá</h3>
+        <select name="minRating" class="form-select"><option value="">Tất cả</option><option value="9" @(c.MinRating == 9 ? "selected" : "")>Tuyệt hảo 9+</option><option value="8" @(c.MinRating == 8 ? "selected" : "")>Rất tốt 8+</option><option value="4" @(c.MinRating == 4 ? "selected" : "")>Từ 4/5</option></select>
+        <h3>Loại hình lưu trú</h3>
+        @foreach (var t in Model.Types) { <div class="form-check"><input class="form-check-input" type="checkbox" name="types" id="t-@t" value="@t" @(c.Types.Contains(t) ? "checked" : "") /><label class="form-check-label" for="t-@t">@t</label></div> }
+        <h3>Tiện nghi</h3>
+        @foreach (var a in Model.Amenities) { <div class="form-check"><input class="form-check-input" type="checkbox" name="amenities" id="a-@a.Id" value="@a.Id" @(c.Amenities.Contains(a.Id) ? "checked" : "") /><label class="form-check-label" for="a-@a.Id">@a.Name</label></div> }
+        <h3>Khác</h3>
+        <div class="form-check"><input class="form-check-input" type="checkbox" name="breakfast" id="f-bf" value="true" @(c.Breakfast ? "checked" : "") /><label class="form-check-label" for="f-bf">Bao gồm bữa sáng</label></div>
+        <div class="form-check"><input class="form-check-input" type="checkbox" name="freeCancel" id="f-fc" value="true" @(c.FreeCancel ? "checked" : "") /><label class="form-check-label" for="f-fc">Miễn phí hủy</label></div>
+        <input type="hidden" name="sort" value="@c.Sort" />
+        <button class="btn btn-primary w-100 mt-3" type="submit">Áp dụng bộ lọc</button>
+        <a class="btn btn-ghost w-100 mt-2" href="@Url.Action("Index", "Hotels", new { destinationId = c.DestinationId, checkIn = c.CheckIn, checkOut = c.CheckOut, adults = c.Adults, children = c.Children, rooms = c.Rooms })">Xóa bộ lọc</a>
+      </form>
+    </aside>
+    <section class="col-lg-9" aria-label="Kết quả">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h1 class="h4 mb-0">@r.Total chỗ nghỉ@(c.DestinationId.HasValue ? " tại " + Model.Destinations.Where(d => d.Id == c.DestinationId).Select(d => d.Name).FirstOrDefault() : "")</h1>
+        <form method="get" class="d-flex align-items-center gap-2">
+          @foreach (var k in Request.QueryString.AllKeys.Where(k => k != null && k != "sort" && k != "page")) { foreach (var v in Request.QueryString.GetValues(k)) { <input type="hidden" name="@k" value="@v" /> } }
+          <label for="sort" class="small text-muted mb-0">Sắp xếp</label>
+          <select id="sort" name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="" @(string.IsNullOrEmpty(c.Sort) ? "selected" : "")>Phổ biến nhất</option>
+            <option value="price-asc" @(c.Sort == "price-asc" ? "selected" : "")>Giá thấp → cao</option>
+            <option value="price-desc" @(c.Sort == "price-desc" ? "selected" : "")>Giá cao → thấp</option>
+            <option value="rating" @(c.Sort == "rating" ? "selected" : "")>Điểm đánh giá</option>
+          </select>
+        </form>
+      </div>
+      @if (r.Items.Count == 0)
+      {
+        <div class="empty">@Html.Icon("search", 40)<h2 class="h5">Không tìm thấy chỗ nghỉ phù hợp</h2><p>Hãy thử đổi ngày, giảm bớt bộ lọc hoặc chọn điểm đến khác.</p><a class="btn btn-primary" href="@Url.Action("Index", "Hotels")">Xem tất cả chỗ nghỉ</a></div>
+      }
+      else
+      {
+        <div class="d-grid gap-3">
+        @foreach (var h in r.Items)
+        {
+          bool on = favs != null && favs.Contains(h.Id); string q = ViewBag.StayQuery as string;
+          <article class="result-card">
+            <div class="thumb"><a href="@Url.Action("Details", "Hotels", new { id = h.Id })@q"><img src="@Html.Img(h.CoverImageUrl)" alt="@h.Name" loading="lazy" /></a>
+              <button type="button" class="fav-btn @(on ? "on" : "")" data-id="@h.Id" aria-pressed="@(on ? "true" : "false")" aria-label="Thêm @h.Name vào yêu thích">@Html.Icon("heart", 18)</button></div>
+            <div class="info">
+              <div class="d-flex justify-content-between gap-2"><div><h2 class="h5 mb-1"><a href="@Url.Action("Details", "Hotels", new { id = h.Id })@q">@h.Name</a></h2>
+                <div class="small text-muted">@Html.Icon("map-pin", 14) @h.Address</div></div>
+                @if (h.ReviewCount > 0) { <div class="text-end"><span class="score">@h.Rating.ToString("0.0")</span><div class="small text-muted">@h.ReviewCount đánh giá</div></div> }</div>
+              <div class="my-2">@Html.Stars(h.Stars) <span class="chip gray">@h.PropertyType</span></div>
+              <p class="small text-muted mb-2">@(h.Description != null && h.Description.Length > 150 ? h.Description.Substring(0, 150) + "…" : h.Description)</p>
+              <div class="mt-auto d-flex flex-wrap gap-1">
+                @foreach (var a in h.Amenities) { <span class="chip teal">@a</span> }
+                @if (h.BreakfastIncluded) { <span class="chip">@Html.Icon("coffee", 12) Bao gồm bữa sáng</span> }
+                <span class="chip">@Html.Icon("check", 12) @h.CancelPolicy</span>
+              </div>
+            </div>
+            <div class="side">
+              <div>@if (c.HasDates) { if (h.RoomsLeft > 0 && h.RoomsLeft <= 3) { <span class="chip" style="background:#fef3c7;color:#92400e">Chỉ còn @h.RoomsLeft phòng</span> } else { <span class="chip teal">Còn phòng</span> } }</div>
+              <div><div class="small text-muted">Giá mỗi đêm từ</div><div class="price">@Html.Money(h.PriceFrom)</div>
+                @if (c.HasDates) { <div class="small text-muted">@c.Nights đêm, @c.Rooms phòng: <strong>@Html.Money(h.TotalForStay)</strong></div><div class="small text-muted">chưa gồm thuế/phí</div> }
+                <a class="btn btn-primary mt-2" href="@Url.Action("Details", "Hotels", new { id = h.Id })@q">Xem chi tiết</a></div>
+            </div>
+          </article>
+        }
+        </div>
+        @Html.Partial("_Pager", r)
+      }
+    </section>
+  </div>
+</div>

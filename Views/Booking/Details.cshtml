@@ -1,0 +1,66 @@
+@model BookingDetail
+@{ var gws = (List<TravelHub.Services.Payment.IPaymentGateway>)ViewBag.Gateways; string receipt = ViewBag.ReceiptNo as string; var prev = ViewBag.RefundPreview as RefundDecision;
+   bool canCancel = Model.StatusCode == "Pending" || Model.StatusCode == "Paid"; bool paid = Model.StatusCode == "Paid" || Model.StatusCode == "CheckedIn" || Model.StatusCode == "Completed";
+   bool canReview = !Model.HasReview && (Model.StatusCode == "Completed" || (Model.StatusCode == "Paid" && Model.CheckOut.Date <= DateTime.Today)); }
+<div class="container py-4">
+  <div class="steps"><div class="s done"><b>1</b>Chọn phòng</div><span class="sep"></span><div class="s done"><b>2</b>Thông tin &amp; giá</div><span class="sep"></span><div class="s @(paid ? "done" : "on")"><b>3</b>Thanh toán</div><span class="sep"></span><div class="s @(paid ? "on" : "")"><b>4</b>Xác nhận</div></div>
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><div><h1 class="h3 mb-1">Đặt phòng @Model.Code</h1><div class="text-muted small">Tạo lúc @Html.DateTimeText(Model.CreatedAt)</div></div>@Html.StatusBadge(Model.Status)</div>
+
+  @if (Model.IsHoldActive) {
+    <div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2"><div>@Html.Icon("clock", 18) Phòng đang được giữ cho bạn. Còn lại: <span class="countdown" data-countdown="@Model.ExpiresAt.Value.ToString("yyyy-MM-ddTHH:mm:ss")"></span></div><div class="small">Hoàn tất thanh toán để xác nhận đặt phòng.</div></div> }
+  @if (Model.StatusCode == "Expired") { <div class="alert alert-secondary">Đơn đã hết hạn giữ phòng. Nếu bạn đã bị trừ tiền, hệ thống sẽ đối soát và hoàn lại — hãy liên hệ hỗ trợ kèm mã đặt phòng.</div> }
+  @if (paid) { <div class="alert alert-success">Đặt phòng đã được xác nhận. Email xác nhận và biên nhận được gửi tới @Model.GuestEmail.</div> }
+
+  <div class="row g-4"><div class="col-lg-7">
+    <div class="box mb-3"><h2 class="h5">@Model.HotelName</h2><div class="text-muted small mb-2">@Html.Icon("map-pin", 14) @Model.HotelAddress @if (!string.IsNullOrEmpty(Model.HotelPhone)) { <text> · ☎ @Model.HotelPhone</text> }</div>
+      <dl class="row mb-0 small">
+        <dt class="col-sm-4">Loại phòng</dt><dd class="col-sm-8">@Model.RoomName × @Model.Quantity</dd>
+        <dt class="col-sm-4">Nhận phòng</dt><dd class="col-sm-8">@Html.Date(Model.CheckIn) (từ @Model.CheckInTime)</dd>
+        <dt class="col-sm-4">Trả phòng</dt><dd class="col-sm-8">@Html.Date(Model.CheckOut) (trước @Model.CheckOutTime) · @Model.Nights đêm</dd>
+        <dt class="col-sm-4">Khách</dt><dd class="col-sm-8">@Model.Adults người lớn@(Model.Children > 0 ? ", " + Model.Children + " trẻ em" : "")</dd>
+        <dt class="col-sm-4">Người đặt</dt><dd class="col-sm-8">@Model.GuestName · @Model.GuestEmail · @Model.GuestPhone</dd>
+        @if (!string.IsNullOrEmpty(Model.Note)) { <dt class="col-sm-4">Yêu cầu</dt><dd class="col-sm-8">@Model.Note</dd> }
+        <dt class="col-sm-4">Chính sách hủy</dt><dd class="col-sm-8">@Model.CancelPolicyText</dd>
+      </dl></div>
+
+    <div class="box mb-3"><h2 class="h5">Lịch sử thanh toán</h2>
+      @if (!Model.Payments.Any()) { <p class="text-muted small mb-0">Chưa có giao dịch.</p> } else {
+      <div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Thời gian</th><th>Phương thức</th><th>Mã giao dịch</th><th class="text-end">Số tiền</th><th>Trạng thái</th></tr></thead><tbody>
+      @foreach (var p in Model.Payments) { <tr><td>@Html.DateTimeText(p.NgayThanhToan ?? p.NgayTao)</td><td>@p.PhuongThuc</td><td class="small">@(p.MaThamChieuVNPAY ?? p.MaGiaoDich)</td><td class="text-end">@Html.Money(p.SoTien)</td><td>@Html.PayBadge(p.TrangThai)</td></tr> }</tbody></table></div> }
+      @if (Model.Refund != null) { <div class="alert alert-info mt-3 mb-0 small"><strong>Hoàn tiền:</strong> @Html.Money(Model.Refund.SoTien) —
+        @switch (Model.Refund.TrangThai) { case "PENDING": <text>đang chờ xử lý</text> break; case "APPROVED": <text>đã duyệt, đang thực hiện hoàn tiền</text> break; case "MANUAL_REQUIRED": <text>đã duyệt, chờ hoàn thủ công qua ngân hàng</text> break; case "REFUNDED": <text>đã hoàn thành@(string.IsNullOrEmpty(Model.Refund.MaGiaoDichHoan) ? "" : " (mã " + Model.Refund.MaGiaoDichHoan + ")")</text> break; case "REJECTED": <text>không được chấp thuận. @Model.Refund.LyDoTuChoi</text> break; } </div> }
+    </div>
+
+    <div class="box"><h2 class="h5">Lịch sử trạng thái</h2><ul class="timeline mb-0">@foreach (var hs in Model.History) { <li><strong>@hs.DenTrangThai</strong> <span class="small text-muted">— @Html.DateTimeText(hs.NgayTao)</span>@if (!string.IsNullOrEmpty(hs.LyDo)) { <div class="small">@hs.LyDo</div> }</li> }</ul></div>
+  </div>
+
+  <div class="col-lg-5"><div class="sticky-box">
+    <div class="box mb-3"><h2 class="h5">Chi tiết giá</h2>
+      @if (Model.Quote != null) { @Html.Partial("_PriceTable", Model.Quote) } else { <div class="price">@Html.Money(Model.Total)</div> }
+      <div class="d-flex justify-content-between mt-2 small"><span>Đã thanh toán</span><strong>@Html.Money(Model.PaidAmount)</strong></div></div>
+
+    @if (Model.IsHoldActive) {
+      <div class="box mb-3"><h2 class="h6">Thanh toán</h2>
+        @foreach (var g in gws) {
+          if (g.IsConfigured) { using (Html.BeginForm("Pay", "Booking", FormMethod.Post)) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" /><input type="hidden" name="gateway" value="@g.Name" /><button class="btn btn-primary w-100 mb-2" type="submit">@Html.Icon("credit-card", 16) Thanh toán @Html.Money(Model.Total) qua @g.DisplayName</button> } }
+          else { <button class="btn btn-ghost w-100 mb-2" type="button" disabled title="Chưa cấu hình credential">@g.DisplayName — chưa khả dụng</button> } }
+        @if (!gws.Any(g => g.IsConfigured)) { <p class="small text-muted mb-0">Chưa có cổng thanh toán nào được cấu hình trên hệ thống này. Quản trị viên cần nhập thông tin merchant (xem README).</p> }
+      </div> }
+
+    <div class="box"><h2 class="h6">Thao tác</h2><div class="d-grid gap-2">
+      @if (!string.IsNullOrEmpty(receipt) && paid) { <a class="btn btn-teal" href="@Url.Action("Receipt", new { no = receipt })">@Html.Icon("download", 16) Tải biên nhận PDF</a> }
+      @if (paid) { using (Html.BeginForm("ResendEmail", "Booking", FormMethod.Post)) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-ghost w-100" type="submit">@Html.Icon("mail", 16) Gửi lại email xác nhận</button> } }
+      <a class="btn btn-ghost" href="@Url.Action("Index", "Contact")">@Html.Icon("headset", 16) Gửi yêu cầu hỗ trợ</a>
+      @if (canCancel) {
+        using (Html.BeginForm("Cancel", "Booking", FormMethod.Post, new { data_confirm = "Bạn chắc chắn muốn hủy đặt phòng này?" })) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" />
+          <label class="form-label small" for="reason">Lý do hủy (tùy chọn)</label><input id="reason" name="reason" class="form-control mb-2" maxlength="300" />
+          if (prev != null) { <div class="small mb-2 @(prev.Eligible ? "text-success" : "text-danger")">Nếu hủy bây giờ: @(prev.Eligible ? "hoàn " + Html.Money(prev.Amount) : "không được hoàn tiền"). @prev.Description</div> }
+          <button class="btn btn-outline-danger w-100" type="submit">Hủy đặt phòng</button> } }
+    </div></div>
+
+    @if (canReview) { <div class="box mt-3"><h2 class="h6">Đánh giá kỳ lưu trú</h2>
+      @using (Html.BeginForm("Review", "Booking", FormMethod.Post)) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" />
+        <label class="form-label small" for="rating">Điểm</label><select id="rating" name="rating" class="form-select mb-2"><option value="5">5 – Tuyệt vời</option><option value="4">4 – Tốt</option><option value="3">3 – Bình thường</option><option value="2">2 – Kém</option><option value="1">1 – Rất tệ</option></select>
+        <label class="form-label small" for="content">Nhận xét</label><textarea id="content" name="content" class="form-control mb-2" rows="3" maxlength="1000"></textarea><button class="btn btn-primary w-100" type="submit">Gửi đánh giá</button> } </div> }
+  </div></div></div>
+</div>

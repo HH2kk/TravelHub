@@ -1,0 +1,15 @@
+@model List<BookingListRow>
+@{ dynamic q = ViewBag.Q; }
+<div class="ph"><div><h1>Đặt phòng</h1><div class="sub">Tất cả đơn đặt phòng, giữ chỗ và thanh toán.</div></div><a class="btn btn-ghost btn-sm" href="@Url.Action("Export", new { code = (string)q.code, customer = (string)q.customer, status = (string)q.status })">@Html.Icon("download", 16) Xuất CSV</a></div>
+<form method="get" class="filters-bar row g-2">
+  <div class="col-md-2"><input class="form-control" name="code" placeholder="Mã đặt phòng" value="@q.code" aria-label="Mã đặt phòng" /></div>
+  <div class="col-md-3"><input class="form-control" name="customer" placeholder="Khách (tên/email)" value="@q.customer" aria-label="Khách" /></div>
+  <div class="col-md-2"><select class="form-select" name="status" aria-label="Trạng thái"><option value="">Mọi trạng thái</option>@foreach (var s in new[] { BookingStatus.Pending, BookingStatus.Paid, BookingStatus.CheckedIn, BookingStatus.Completed, BookingStatus.Cancelled, BookingStatus.Expired }) { <option @(s == (string)q.status ? "selected" : "")>@s</option> }</select></div>
+  <div class="col-md-2"><input class="form-control" type="date" name="from" value="@(q.from == null ? "" : ((DateTime)q.from).ToString("yyyy-MM-dd"))" aria-label="Nhận phòng từ" /></div>
+  <div class="col-md-2"><input class="form-control" type="date" name="to" value="@(q.to == null ? "" : ((DateTime)q.to).ToString("yyyy-MM-dd"))" aria-label="Nhận phòng đến" /></div>
+  <div class="col-md-1"><button class="btn btn-primary w-100" type="submit">Lọc</button></div>
+</form>
+<div class="panel"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Mã</th><th>Khách</th><th>Chỗ nghỉ / phòng</th><th>Lưu trú</th><th class="text-end">Tổng</th><th>Trạng thái</th><th>Đặt lúc</th></tr></thead><tbody>
+@foreach (var b in Model) { <tr><td><a href="@Url.Action("Details", new { id = b.Id })"><strong>@b.Code</strong></a></td><td>@b.CustomerName<div class="small text-muted">@b.CustomerEmail</div></td><td>@b.HotelName<div class="small text-muted">@b.RoomName</div></td><td>@Html.Date(b.CheckIn) → @Html.Date(b.CheckOut)</td><td class="text-end">@Html.Money(b.Total)</td><td>@Html.StatusBadge(b.Status)</td><td class="small">@Html.DateTimeText(b.CreatedAt)</td></tr> }
+@if (!Model.Any()) { <tr><td colspan="7" class="text-center text-muted py-4">Không có đặt phòng phù hợp.</td></tr> }
+</tbody></table></div>@Html.Partial("_Pager")</div>

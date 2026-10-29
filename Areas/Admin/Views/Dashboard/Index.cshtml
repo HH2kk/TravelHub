@@ -1,0 +1,107 @@
+@model TravelHub.Services.AdminDashboard
+@{
+    var me = Auth.Current; int days = Model.Days;
+    var hour = DateTime.Now.Hour; var greet = hour < 11 ? "Chào buổi sáng" : hour < 14 ? "Chào buổi trưa" : hour < 18 ? "Chào buổi chiều" : "Chào buổi tối";
+    var fmtMoney = (Func<decimal, string>)(v => Html.Money(v));
+    int tot = Math.Max(1, Model.TopHotels.Count);
+    decimal maxHotel = Model.TopHotels.Count == 0 ? 1 : Math.Max(1, Model.TopHotels.Max(x => x.Value));
+    int maxRoute = Model.TopRoutes.Count == 0 ? 1 : Math.Max(1, Model.TopRoutes.Max(x => x.Count));
+    decimal maxDest = Model.TopDestinations.Count == 0 ? 1 : Math.Max(1, Model.TopDestinations.Max(x => x.Value));
+    var labels = Model.DailyRevenue.Select(d => d.Key.ToString("dd/MM")).ToList();
+}
+<div class="hero-dash">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 position-relative" style="z-index:1">
+    <div><h1>@greet, @me.FullName 👋</h1>
+      <p>Tình hình @days ngày gần đây · @Model.Customers khách hàng · @Model.Hotels chỗ nghỉ · @Model.FlightsUpcoming chuyến bay sắp khởi hành.</p></div>
+    <div class="seg">@foreach (var d in new[] { 7, 30, 90 }) { <a class="@(days == d ? "on" : "")" href="?days=@d">@d ngày</a> }</div>
+  </div>
+  <div class="qa">
+    <a href="@Url.Action("Index", "Bookings", new { status = "Chờ thanh toán" })">@Html.Icon("clock", 15) Đơn chờ thanh toán</a>
+    <a href="@Url.Action("Index", "Tickets", new { status = "Booked" })">@Html.Icon("ticket", 15) Vé sắp bay</a>
+    <a href="@Url.Action("Index", "Flights", new { when = "upcoming" })">@Html.Icon("plane", 15) Lịch bay</a>
+    <a href="@Url.Action("Index", "Customers")">@Html.Icon("users", 15) Hồ sơ khách</a>
+    @if (me.Role == AppRoles.Admin) { <a href="@Url.Action("Create", "Flights")">@Html.Icon("plus", 15) Thêm chuyến bay</a> }
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-xl-3"><div class="kpi"><span class="ico teal">@Html.Icon("wallet", 19)</span><div class="l">Doanh thu thực thu</div><div class="v">@Html.Money(Model.Revenue)</div><div class="s">@Html.Delta(Model.Revenue, Model.RevenuePrev)</div>@if (Model.Refunded > 0) { <div class="s">Đã trừ hoàn tiền @Html.Money(Model.Refunded)</div> }</div></div>
+  <div class="col-6 col-xl-3"><div class="kpi"><span class="ico blue">@Html.Icon("calendar", 19)</span><div class="l">Đặt phòng mới</div><div class="v">@Model.Bookings</div><div class="s">@Html.Delta(Model.Bookings, Model.BookingsPrev)</div><div class="s">Giá trị @Html.Money(Model.BookingValue)</div></div></div>
+  <div class="col-6 col-xl-3"><div class="kpi"><span class="ico sky">@Html.Icon("ticket", 19)</span><div class="l">Vé máy bay đã đặt</div><div class="v">@Model.TicketsActive</div><div class="s">@Html.Delta(Model.TicketsActive, Model.TicketsPrev)</div><div class="s">Giá trị vé @Html.Money(Model.TicketValue)@if (Model.TicketsCancelled > 0) { <text> · hủy @Model.TicketsCancelled</text> }</div></div></div>
+  <div class="col-6 col-xl-3"><div class="kpi"><span class="ico violet">@Html.Icon("users", 19)</span><div class="l">Khách hàng mới</div><div class="v">@Model.NewCustomers</div><div class="s">@Html.Delta(Model.NewCustomers, Model.NewCustomersPrev)</div><div class="s">Tổng @Model.Customers khách</div></div></div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-8">
+    <div class="panel h-100">
+      <h2>Doanh thu thực thu theo ngày <small>@Html.Money(Model.Revenue) trong @days ngày</small></h2>
+      @if (Model.DailyRevenue.All(d => d.Value == 0)) { <div class="empty">@Html.Icon("bar-chart", 28)Chưa có khoản thu thành công nào trong @days ngày gần đây.<br /><small>Doanh thu chỉ tính giao dịch đã thanh toán thành công, trừ hoàn tiền.</small></div> }
+      else { @Html.AreaChart(Model.DailyRevenue.Select(d => d.Value).ToList(), labels, "#2563eb", fmtMoney, "rev") <div class="axis"><span>@labels.First()</span><span>@labels[labels.Count / 2]</span><span>@labels.Last()</span></div> }
+      <div class="row g-3 mt-2">
+        <div class="col-6"><div class="small text-muted fw-bold mb-1">Đặt phòng mỗi ngày</div>@Html.BarChart(Model.DailyBookings.Select(d => d.Value).ToList(), labels, "#2563eb", "đơn")</div>
+        <div class="col-6"><div class="small text-muted fw-bold mb-1">Vé máy bay mỗi ngày</div>@Html.BarChart(Model.DailyTickets.Select(d => d.Value).ToList(), labels, "#0ea5e9", "vé")</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="panel h-100"><h2>Cần xử lý hôm nay @if (Model.Todo.Count > 0) { <small>@Model.Todo.Count mục</small> }</h2>
+      @if (Model.Todo.Count == 0) { <div class="allclear">@Html.Icon("check-circle", 20) Không có việc tồn đọng 🎉</div> }
+      else { <ul class="todo">@foreach (var t in Model.Todo) { <li><a class="@t.Level" href="@t.Url"><span class="cnt">@t.Count</span><span class="flex-grow-1">@t.Text</span>@Html.Icon("chevron-right", 16)</a></li> }</ul> }
+      <hr />
+      <div class="small text-muted fw-bold mb-2">Chờ thanh toán (đang giữ phòng)</div>
+      <div class="d-flex justify-content-between"><span>@Html.Money(Model.PendingValue)</span><a class="small" href="@Url.Action("Index", "Bookings", new { status = "Chờ thanh toán" })">Xem đơn</a></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-6"><div class="panel h-100"><h2>Đặt phòng theo trạng thái <a class="more" href="@Url.Action("Index", "Bookings")">Tất cả →</a></h2>@Html.Donut(Model.BookingStatus, "đơn")</div></div>
+  <div class="col-lg-6"><div class="panel h-100"><h2>Vé máy bay theo trạng thái <a class="more" href="@Url.Action("Index", "Tickets")">Tất cả →</a></h2>@Html.Donut(Model.TicketStatus, "vé")</div></div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-7">
+    <div class="panel h-100"><h2>Chuyến bay sắp khởi hành <small>Tải ghế trung bình @Model.AvgLoad.ToString("0")%</small></h2>
+      @foreach (var f in Model.Upcoming)
+      {
+        <a class="fcard rowlink" href="@Url.Action("Details", "Flights", new { id = f.Id })">
+          @Html.AirlineBadge(f.AirlineIata)
+          <div><div class="route" style="min-width:0"><div class="pt"><b>@f.FromCode</b></div><div class="ln">@Html.Icon("plane", 14)</div><div class="pt"><b>@f.ToCode</b></div><span class="ms-2 small text-muted">@f.Code</span></div>
+            <div class="meta mt-1">@f.FromName → @f.ToName · @f.Aircraft</div>
+            <div class="d-flex align-items-center gap-2 mt-1" style="max-width:260px">@Html.LoadBar(f.LoadPct)<span class="small fw-bold">@f.LoadPct%</span><span class="small text-muted">@f.Sold/@f.Seats ghế</span></div></div>
+          <div class="when"><b>@f.Departs.ToString("HH:mm")</b><small>@f.Departs.ToString("dd/MM")</small><div class="mt-1">@Html.FlightBadge(f.Status)</div></div>
+        </a>
+      }
+      @if (Model.Upcoming.Count == 0) { <div class="empty">Chưa có chuyến bay sắp tới.</div> }
+    </div></div>
+  <div class="col-lg-5">
+    <div class="panel h-100"><h2>Tuyến bay được đặt nhiều</h2>
+      <ol class="rank">@{ int r = 0; } @foreach (var x in Model.TopRoutes) { r++; <li><span class="n">@r</span><span class="t">@x.Name<small>@x.Extra</small></span><span class="vv">@x.Count vé<small>@Html.Money(x.Value)</small></span><div class="hbar"><i style="width:@(x.Count * 100 / maxRoute)%"></i></div></li> }</ol>
+      @if (Model.TopRoutes.Count == 0) { <div class="empty">Chưa có vé.</div> }
+      <h2 class="mt-3">Hãng bay</h2>
+      <table class="tbl flush"><tbody>@foreach (var a in Model.Airlines) { <tr><td>@Html.AirlineBadge(a.Extra)</td><td><strong>@a.Name</strong></td><td class="text-end">@a.Count vé</td></tr> }</tbody></table>
+    </div></div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-4"><div class="panel h-100"><h2>Chỗ nghỉ doanh số cao</h2>
+    <ol class="rank">@{ int h1 = 0; } @foreach (var x in Model.TopHotels) { h1++; <li><span class="n">@h1</span><span class="t">@x.Name<small>@x.Extra</small></span><span class="vv">@Html.Short(x.Value)<small>@x.Count đơn</small></span><div class="hbar"><i style="width:@((int)(x.Value * 100 / maxHotel))%"></i></div></li> }</ol>
+    @if (Model.TopHotels.Count == 0) { <div class="empty">Chưa có đơn.</div> }</div></div>
+  <div class="col-lg-4"><div class="panel h-100"><h2>Điểm đến nổi bật</h2>
+    <ol class="rank">@{ int d1 = 0; } @foreach (var x in Model.TopDestinations) { d1++; <li><span class="n">@d1</span><span class="t">@x.Name</span><span class="vv">@Html.Short(x.Value)<small>@x.Count đơn</small></span><div class="hbar"><i style="width:@((int)(x.Value * 100 / maxDest))%"></i></div></li> }</ol>
+    @if (Model.TopDestinations.Count == 0) { <div class="empty">Chưa có đơn.</div> }</div></div>
+  <div class="col-lg-4"><div class="panel h-100"><h2>Khách hàng giá trị cao <a class="more" href="@Url.Action("Index", "Customers", new { sort = "spend" })">Xem →</a></h2>
+    <ol class="rank">@{ int c1 = 0; } @foreach (var x in Model.TopCustomers) { c1++; <li><span class="n">@c1</span><span class="t"><a href="@Url.Action("Details", "Customers", new { id = x.Extra })">@x.Name</a><small>@x.Count giao dịch</small></span><span class="vv">@Html.Short(x.Value)</span></li> }</ol>
+    @if (Model.TopCustomers.Count == 0) { <div class="empty">Chưa có khách phát sinh giao dịch.</div> }</div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-7"><div class="panel"><h2>Đặt phòng mới nhất <a class="more" href="@Url.Action("Index", "Bookings")">Tất cả →</a></h2>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Mã</th><th>Khách</th><th>Chỗ nghỉ</th><th class="text-end">Tổng</th><th>Trạng thái</th></tr></thead><tbody>
+    @foreach (var b in Model.RecentBookings) { <tr><td><a class="mono" href="@Url.Action("Details", "Bookings", new { id = b.Id })">@b.Code</a><div class="small text-muted">@Html.DateTimeText(b.At)</div></td><td>@b.Customer</td><td>@b.Hotel<div class="small text-muted">@b.Nights đêm</div></td><td class="text-end">@Html.Money(b.Total)</td><td>@Html.StatusBadge(b.Status)</td></tr> }
+    </tbody></table></div></div></div>
+  <div class="col-lg-5"><div class="panel"><h2>Vé máy bay mới nhất <a class="more" href="@Url.Action("Index", "Tickets")">Tất cả →</a></h2>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Vé</th><th>Hành khách</th><th>Chuyến</th><th>Trạng thái</th></tr></thead><tbody>
+    @foreach (var t in Model.RecentTickets) { <tr><td><a class="mono" href="@Url.Action("Details", "Tickets", new { id = t.Id })">@t.Code</a></td><td>@t.Passenger</td><td>@t.FromCode→@t.ToCode<div class="small text-muted">@t.FlightCode · @t.Departs.ToString("dd/MM")</div></td><td>@Html.TicketBadge(t.Status, t.StatusCode)</td></tr> }
+    </tbody></table></div></div></div>
+</div>

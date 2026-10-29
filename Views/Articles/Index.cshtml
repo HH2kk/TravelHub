@@ -1,0 +1,8 @@
+@model List<ArticleRow>
+@{ var cats = (List<string>)ViewBag.Categories; }
+<div class="container py-4"><h1 class="h2 mb-3">Cẩm nang du lịch</h1>
+  <form method="get" class="row g-2 mb-4"><div class="col-md-6"><label class="visually-hidden" for="aq">Tìm bài viết</label><input id="aq" type="search" class="form-control" name="q" value="@ViewBag.Q" placeholder="Tìm bài viết…" /></div>
+    <div class="col-md-3"><label class="visually-hidden" for="ac">Danh mục</label><select id="ac" name="category" class="form-select"><option value="">Tất cả danh mục</option>@foreach (var c in cats) { <option @(c == (string)ViewBag.Category ? "selected" : "")>@c</option> }</select></div>
+    <div class="col-md-3"><button class="btn btn-primary w-100" type="submit">@Html.Icon("search", 16) Tìm</button></div></form>
+  @if (!Model.Any()) { <div class="empty">@Html.Icon("newspaper", 36)<p>Không có bài viết phù hợp.</p></div> }
+  <div class="row g-3">@foreach (var a in Model) { <div class="col-md-6 col-lg-4"><article class="card-th"><div class="thumb"><img src="@Html.Img(a.ImageUrl)" alt="@a.Title" loading="lazy" /></div><div class="body"><span class="chip">@a.Category</span> @if (!string.IsNullOrEmpty(a.DestinationName)) { <span class="chip teal">@a.DestinationName</span> }<h2 class="h6 mt-2"><a class="stretched" href="@Url.Action("Details", new { id = a.Id })">@a.Title</a></h2><p class="small text-muted mb-1">@a.Summary</p><div class="small text-muted">@a.Author · @Html.Date(a.PostedAt)</div></div></article></div> }</div></div>

@@ -1,0 +1,47 @@
+@model FlightRow
+@{ var tix = (List<TicketRow>)ViewBag.Tickets; bool isAdmin = Auth.Current.Role == AppRoles.Admin; var active = tix.Where(t => t.StatusCode != "Cancelled").ToList(); }
+<div class="ph"><div><div class="crumbs">@Html.ActionLink("Chuyến bay", "Index") /</div><h1>@Model.Code <span class="fs-6 text-muted fw-semibold">@Model.AirlineName</span></h1></div>
+  <div class="d-flex gap-2 flex-wrap">@Html.FlightBadge(Model.Status)@if (!Model.Active) { <span class="chip gray">Ngừng bán</span> }
+    @if (isAdmin) { <a class="btn btn-ghost btn-sm" href="@Url.Action("Edit", new { id = Model.Id })">@Html.Icon("edit", 15) Sửa</a> }
+    <a class="btn btn-ghost btn-sm" href="@Url.Action("Index", "Tickets", new { flight = Model.Id })">@Html.Icon("ticket", 15) Tất cả vé</a></div></div>
+
+<div class="pass mb-3 @(Model.Status == "Cancelled" ? "cancelled" : "")"><div class="main">
+  <div class="head"><span class="d-flex align-items-center gap-2">@Html.AirlineBadge(Model.AirlineIata)<strong>@Model.AirlineName</strong></span><span class="chip">@Model.Aircraft</span></div>
+  <div class="big"><div class="pt"><b>@Model.FromCode</b><small>@Model.FromName</small></div><div class="ln">@Html.Icon("plane", 18)<span>@FlightInfo.Duration(Model.Departs, Model.Arrives) bay thẳng</span></div><div class="pt text-end"><b>@Model.ToCode</b><small>@Model.ToName</small></div></div>
+  <div class="grid4">
+    <div><label>Khởi hành</label><b>@Model.Departs.ToString("HH:mm")</b><div class="small text-muted">@Model.Departs.ToString("dd/MM/yyyy")</div></div>
+    <div><label>Hạ cánh</label><b>@Model.Arrives.ToString("HH:mm")</b><div class="small text-muted">@Model.Arrives.ToString("dd/MM/yyyy")</div></div>
+    <div><label>Cửa ra</label><b>@(string.IsNullOrEmpty(Model.Gate) ? "—" : Model.Gate)</b></div>
+    <div><label>Hành lý</label><b>@Model.BaggageKg kg</b></div>
+  </div></div>
+  <div class="stub"><div><label>Giá phổ thông</label><b>@Html.Money(Model.Price)</b>@if (Model.BusinessPrice.HasValue) { <label class="mt-2">Thương gia</label><b style="font-size:1.1rem">@Html.Money(Model.BusinessPrice.Value)</b> }</div><div class="bars"></div></div></div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="l">Tải ghế</div><div class="v">@Model.LoadPct%</div><div class="s">@Model.Sold/@Model.Seats ghế · còn @Model.SeatsLeft</div></div>
+  <div class="stat"><div class="l">Vé trong hệ thống</div><div class="v">@Model.TicketsActive</div><div class="s">@Model.TicketsCancelled vé đã hủy</div></div>
+  <div class="stat"><div class="l">Giá trị vé</div><div class="v">@Html.Short(Model.TicketValue)</div><div class="s">@Html.Money(Model.TicketValue)</div></div>
+  <div class="stat"><div class="l">Làm thủ tục</div><div class="v">@active.Count(t => t.StatusCode == "CheckedIn" || t.StatusCode == "Completed")/@active.Count</div><div class="s">hành khách đã làm thủ tục</div></div>
+</div>
+@if (!string.IsNullOrEmpty(Model.Note)) { <div class="alert alert-info small">@Html.Icon("alert", 15) @Model.Note</div> }
+@if (tix.Any(t => t.IsSample) || true) { <div class="small text-muted mb-2">Số ghế đã bán là tồn kho của hãng; danh sách bên dưới chỉ gồm vé ghi nhận trong hệ thống TravelHub.</div> }
+
+<div class="row g-3">
+  <div class="col-lg-8"><div class="panel"><h2>Danh sách hành khách <small>@tix.Count vé</small></h2>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Ghế</th><th>Hành khách</th><th>Giấy tờ</th><th>Liên hệ</th><th>Hạng</th><th class="text-end">Giá</th><th>Trạng thái</th></tr></thead><tbody>
+    @foreach (var t in tix) { <tr><td class="mono"><strong>@t.Seat</strong></td><td><a href="@Url.Action("Details", "Tickets", new { id = t.Id })"><strong>@t.Passenger</strong></a><div class="small text-muted"><a href="@Url.Action("Details", "Customers", new { id = t.CustomerId })">@t.CustomerName</a> @if (t.IsSample) { <span class="sample">mẫu</span> }</div></td><td class="small mono">@t.DocNo</td><td class="small">@t.ContactEmail<div class="text-muted">@t.ContactPhone</div></td><td class="small">@t.Class@if (t.BaggageKg.HasValue) { <div class="text-muted">@t.BaggageKg kg</div> }</td><td class="text-end">@Html.Money(t.Price)</td><td>@Html.TicketBadge(t.Status, t.StatusCode)</td></tr> }
+    @if (!tix.Any()) { <tr><td colspan="7" class="empty">Chưa có vé nào cho chuyến này.</td></tr> }
+    </tbody></table></div></div></div>
+  <div class="col-lg-4">
+    <div class="panel mb-3"><h2>Cập nhật tình trạng chuyến</h2>
+      @using (Html.BeginForm("SetStatus", "Flights", new { area = "Admin" }, FormMethod.Post, new { data_confirm = "Cập nhật trạng thái chuyến bay? Nếu hủy chuyến, các vé còn hiệu lực sẽ bị hủy theo." })) {
+        @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" />
+        <label class="form-label small" for="st">Trạng thái</label>
+        <select id="st" name="status" class="form-select mb-2">@foreach (var s in FlightInfo.Statuses) { <option value="@s" @(s == Model.Status ? "selected" : "")>@FlightInfo.StatusText(s)</option> }</select>
+        <label class="form-label small" for="nt">Ghi chú / lý do (bắt buộc khi hủy)</label>
+        <input id="nt" name="note" class="form-control mb-2" maxlength="300" placeholder="VD: Chậm 45 phút do thời tiết" />
+        <button class="btn btn-primary w-100" type="submit">Cập nhật</button> }
+    </div>
+    @if (isAdmin) { <div class="panel"><h2>Mở bán</h2>
+      @using (Html.BeginForm("ToggleSale", "Flights", new { area = "Admin" }, FormMethod.Post, new { data_confirm = Model.Active ? "Ngừng bán chuyến bay này?" : "Mở bán lại chuyến bay?" })) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@Model.Id" /><button class="btn @(Model.Active ? "btn-outline-danger" : "btn-teal") w-100" type="submit">@(Model.Active ? "Ngừng bán chuyến này" : "Mở bán lại")</button> }</div> }
+  </div>
+</div>

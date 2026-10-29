@@ -1,0 +1,29 @@
+@model SearchCriteria
+@{ var dests = ViewBag.Destinations as List<DestinationItem> ?? CatalogService.Destinations(); string destName = Model.Q; if (Model.DestinationId.HasValue) { var dd = dests.FirstOrDefault(x => x.Id == Model.DestinationId); if (dd != null) { destName = dd.Name; } } }
+<form method="get" action="@Url.Action("Index", "Hotels", new { area = "" })" class="search-panel" role="search" aria-label="Tìm chỗ nghỉ" novalidate>
+  <div class="sp-field dest">
+    <label class="sp-label" for="sp-dest">@Html.Icon("map-pin", 14) Điểm đến</label>
+    <input id="sp-dest" name="q" class="sp-input" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" placeholder="Thành phố hoặc chỗ nghỉ" value="@destName" maxlength="60" />
+    <input type="hidden" name="destinationId" value="@Model.DestinationId" />
+    <div class="sp-pop"><ul class="sp-sug" role="listbox"></ul></div>
+  </div>
+  <div class="sp-field date">
+    <label class="sp-label" for="sp-in">@Html.Icon("calendar", 14) Nhận phòng</label>
+    <input id="sp-in" type="date" name="checkIn" class="sp-input" value="@(Model.CheckIn.HasValue ? Model.CheckIn.Value.ToString("yyyy-MM-dd") : "")" />
+  </div>
+  <div class="sp-field date">
+    <label class="sp-label" for="sp-out">@Html.Icon("calendar", 14) Trả phòng</label>
+    <input id="sp-out" type="date" name="checkOut" class="sp-input" value="@(Model.CheckOut.HasValue ? Model.CheckOut.Value.ToString("yyyy-MM-dd") : "")" />
+  </div>
+  <div class="sp-field guests">
+    <span class="sp-label" id="sp-g-l">@Html.Icon("users", 14) Khách &amp; phòng</span>
+    <button type="button" class="sp-input sp-guest-btn text-start border-0 bg-transparent p-0" aria-labelledby="sp-g-l" aria-haspopup="dialog"><span class="sp-guest-text"></span></button>
+    <input type="hidden" name="adults" value="@Model.Adults" /><input type="hidden" name="children" value="@Model.Children" /><input type="hidden" name="rooms" value="@Model.Rooms" />
+    <div class="sp-pop guest" role="dialog" aria-label="Khách và phòng">
+      <div class="step-row"><div><b>Người lớn</b><small>Từ 13 tuổi</small></div><div class="stepper"><button type="button" data-step="adults" data-dir="-1" aria-label="Giảm người lớn">−</button><output data-out="adults"></output><button type="button" data-step="adults" data-dir="1" aria-label="Tăng người lớn">+</button></div></div>
+      <div class="step-row"><div><b>Trẻ em</b><small>Dưới 13 tuổi</small></div><div class="stepper"><button type="button" data-step="children" data-dir="-1" aria-label="Giảm trẻ em">−</button><output data-out="children"></output><button type="button" data-step="children" data-dir="1" aria-label="Tăng trẻ em">+</button></div></div>
+      <div class="step-row"><div><b>Phòng</b><small>Số phòng cần đặt</small></div><div class="stepper"><button type="button" data-step="rooms" data-dir="-1" aria-label="Giảm số phòng">−</button><output data-out="rooms"></output><button type="button" data-step="rooms" data-dir="1" aria-label="Tăng số phòng">+</button></div></div>
+    </div>
+  </div>
+  <button type="submit" class="sp-btn no-loading">@Html.Icon("search", 18) Tìm chỗ nghỉ</button>
+</form>

@@ -1,0 +1,9 @@
+<h1>Cấu hình hệ thống</h1>
+<div class="row g-3"><div class="col-lg-7"><div class="panel"><h2>Thông số đặt phòng &amp; liên hệ</h2>
+@using (Html.BeginForm("Save", "Settings", new { area = "Admin" }, FormMethod.Post)) { @Html.AntiForgeryToken()
+ foreach (var r in (List<dynamic>)ViewBag.Rows) { <div class="mb-3"><label class="form-label" for="@r.Khoa">@r.MoTa <code class="small">@r.Khoa</code></label><input id="@r.Khoa" name="@r.Khoa" value="@r.GiaTri" class="form-control" /></div> }
+ <button class="btn btn-primary" type="submit">Lưu cấu hình</button> }
+</div></div>
+<div class="col-lg-5"><div class="panel"><h2>Kết nối bên ngoài</h2><p class="small text-muted">Thông tin bí mật (SMTP, merchant) <strong>không</strong> lưu trong database và không chỉnh sửa tại đây. Cấu hình qua biến môi trường <code>TRAVELHUB_*</code> hoặc <code>App_Data\secrets.config</code> (xem README).</p>
+ <ul class="list-unstyled mb-0">@foreach (var g in (List<KeyValuePair<string, bool>>)ViewBag.Gateways) { <li class="d-flex justify-content-between border-top py-2"><span>@g.Key</span><span class="badge-st @(g.Value ? "ok" : "warn")">@(g.Value ? "Đã cấu hình" : "Chưa cấu hình")</span></li> }
+  <li class="d-flex justify-content-between border-top py-2"><span>Email</span><span class="badge-st info">@ViewBag.Smtp</span></li></ul></div></div></div>

@@ -1,0 +1,18 @@
+@model List<TravelHub.Areas.Admin.Controllers.AirlineRow>
+<div class="ph"><div><h1>Hãng bay</h1><div class="sub">Danh mục hãng hàng không dùng cho chuyến bay và vé.</div></div></div>
+<div class="row g-3"><div class="col-lg-8"><div class="panel"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Hãng</th><th>IATA</th><th class="text-end">Chuyến</th><th class="text-end">Vé</th><th class="text-end">Giá trị vé</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+@foreach (var a in Model)
+{
+  <tr><td>
+    @using (Html.BeginForm("Save", "Airlines", new { area = "Admin" }, FormMethod.Post, new { @class = "d-flex gap-2 align-items-center", id = "f" + a.Id })) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@a.Id" /><input type="hidden" name="iata" value="@a.Iata" /><input class="form-control form-control-sm" name="name" value="@a.Name" maxlength="100" aria-label="Tên hãng" /><button class="btn btn-ghost btn-sm" type="submit">Lưu</button> }
+  </td><td>@Html.AirlineBadge(a.Iata)</td><td class="text-end"><a href="@Url.Action("Index", "Flights", new { airline = a.Iata })">@a.Flights</a></td><td class="text-end">@a.Tickets</td><td class="text-end">@Html.Money(a.Value)</td>
+  <td><span class="badge-st @(a.Active ? "ok" : "gray")">@(a.Active ? "Đang dùng" : "Tạm ẩn")</span></td>
+  <td>@using (Html.BeginForm("Toggle", "Airlines", new { area = "Admin" }, FormMethod.Post)) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@a.Id" /><button class="btn btn-ghost btn-sm" type="submit">@(a.Active ? "Ẩn" : "Hiện")</button> }</td></tr>
+}
+</tbody></table></div></div></div>
+<div class="col-lg-4"><div class="panel"><h2>Thêm hãng bay</h2>
+  @using (Html.BeginForm("Save", "Airlines", new { area = "Admin" }, FormMethod.Post)) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="0" />
+    <label class="form-label small" for="nn">Tên hãng</label><input id="nn" name="name" class="form-control mb-2" maxlength="100" required />
+    <label class="form-label small" for="ni">Mã IATA (2–3 ký tự)</label><input id="ni" name="iata" class="form-control mb-3" maxlength="3" required style="text-transform:uppercase" />
+    <button class="btn btn-primary w-100" type="submit">Thêm</button> }
+</div></div></div>

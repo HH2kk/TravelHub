@@ -1,0 +1,10 @@
+@model List<dynamic>
+<h1>Thanh toán</h1>
+<form method="get" class="filters-bar row g-2">
+  <div class="col-md-4"><input class="form-control" name="q" value="@ViewBag.Q" placeholder="Mã booking / mã giao dịch" aria-label="Tìm" /></div>
+  <div class="col-md-3"><select class="form-select" name="gateway" aria-label="Cổng"><option value="">Mọi cổng</option>@foreach (var g in new[] { "VNPAY", "MOMO" }) { <option @(g == (string)ViewBag.Gateway ? "selected" : "")>@g</option> }</select></div>
+  <div class="col-md-3"><select class="form-select" name="status" aria-label="Trạng thái"><option value="">Mọi trạng thái</option>@foreach (var s in new[] { PaymentStatus.Processing, PaymentStatus.Succeeded, PaymentStatus.Failed, PaymentStatus.Reconcile }) { <option @(s == (string)ViewBag.Status ? "selected" : "")>@s</option> }</select></div>
+  <div class="col-md-2"><button class="btn btn-primary w-100" type="submit">Lọc</button></div></form>
+<div class="panel"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>Booking</th><th>Cổng</th><th>Mã tham chiếu</th><th>Mã GD cổng</th><th class="text-end">Số tiền</th><th>Trạng thái</th><th>Thời gian</th><th></th></tr></thead><tbody>
+@foreach (var r in Model) { <tr><td>@r.MaThanhToan</td><td><a href="@Url.Action("Details", "Bookings", new { id = (int)r.MaDon })">@r.MaDonCode</a></td><td>@r.PhuongThuc</td><td class="small">@r.MaThamChieuVNPAY</td><td class="small">@r.MaGiaoDichCong</td><td class="text-end">@Html.Money((decimal)r.SoTien)</td><td>@Html.PayBadge((string)r.TrangThai)</td><td class="small">@Html.DateTimeText((DateTime)(r.NgayThanhToan ?? r.NgayTao))</td><td><a href="@Url.Action("Callbacks", new { id = (int)r.MaThanhToan })">Nhật ký</a></td></tr> }
+@if (!Model.Any()) { <tr><td colspan="9" class="text-center text-muted py-4">Không có giao dịch.</td></tr> }</tbody></table></div>@Html.Partial("_Pager")</div>

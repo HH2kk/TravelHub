@@ -1,0 +1,116 @@
+@model Customer360
+@{
+    dynamic p = Model.Profile; bool isAdmin = Auth.Current.Role == AppRoles.Admin;
+    var vi = System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
+    int maxCity = Model.TopCities.Count == 0 ? 1 : Model.TopCities.Max(x => x.Value);
+    Func<string, string> kindIcon = k => k == "hotel" ? "bed" : k == "flight" ? "plane" : k == "pay" ? "credit-card" : "star";
+    Func<string, string> beh = t => { switch ((t ?? "").ToLowerInvariant()) { case "view": case "view_hotel": return "Xem chỗ nghỉ"; case "search": return "Tìm kiếm"; case "click": return "Nhấp xem"; case "book": case "booking": return "Đặt chỗ"; case "favorite": return "Thêm yêu thích"; case "read": case "view_article": return "Đọc bài viết"; default: return t; } };
+}
+<div class="crumbs mb-2">@Html.ActionLink("Hồ sơ khách", "Index") /</div>
+<div class="cust-hero">
+  @Html.Avatar((string)p.HoTen, 64)
+  <div class="who"><h1>@p.HoTen</h1>
+    <div class="meta"><span>@Html.Icon("mail", 14) @p.Email</span>@if (p.SoDienThoai != null) { <span>@Html.Icon("phone", 14) @p.SoDienThoai</span> }<span>@Html.Icon("calendar", 14) Tham gia @(((DateTime)p.NgayTao).ToString("dd/MM/yyyy"))</span>@if (p.NgaySinh != null) { <span>Sinh @(((DateTime)p.NgaySinh).ToString("dd/MM/yyyy"))</span> }@if (p.GioiTinh != null) { <span>@p.GioiTinh</span> }</div>
+    <div class="tagrow mt-2">
+      @if (p.AccountId != null) { <span class="badge-st @((bool)p.AccountActive ? "ok" : "bad")">@((bool)p.AccountActive ? "Tài khoản hoạt động" : "Tài khoản bị khóa")</span><span class="chip gray">@p.UserName · @p.Role</span> if ((bool)p.EmailVerified) { <span class="chip teal">Email đã xác minh</span> } else { <span class="chip" style="background:#fef3c7;color:#92400e">Email chưa xác minh</span> } }
+      else { <span class="chip gray">Khách không có tài khoản</span> }
+      @if (Model.BookingCount + Model.TicketCount >= 5) { <span class="chip" style="background:#ece4ff;color:#6d3bd4">Khách thân thiết</span> }
+      @if (Model.TicketCount + Model.BookingCount == 0) { <span class="chip gray">Chưa phát sinh giao dịch</span> }
+    </div></div>
+  <div class="ltv"><small>Tổng giá trị giao dịch</small><b>@Html.Money(Model.Lifetime)</b><div class="small text-muted">Phòng @Html.Short(Model.HotelSpend) · Vé bay @Html.Short(Model.TicketSpend)</div>
+    @if (isAdmin && p.AccountId != null) { <a class="btn btn-ghost btn-sm mt-2" href="@Url.Action("Details", "Users", new { id = (int)p.AccountId })">@Html.Icon("settings", 14) Quản lý tài khoản</a> }</div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="l">Đặt phòng</div><div class="v">@Model.BookingCount</div><div class="s">@Model.PaidBookings đã thanh toán · @Model.CancelledBookings hủy/hết hạn</div></div>
+  <div class="stat"><div class="l">Vé máy bay</div><div class="v">@Model.TicketCount</div><div class="s">@Model.TicketsCancelled vé đã hủy</div></div>
+  <div class="stat"><div class="l">Đã thanh toán thực tế</div><div class="v">@Html.Short(Model.Collected)</div><div class="s">hoàn tiền @Html.Money(Model.Refunded)</div></div>
+  <div class="stat"><div class="l">Đánh giá</div><div class="v">@Model.ReviewCount</div><div class="s">@(Model.ReviewCount > 0 ? Model.AvgStars.ToString("0.0", vi) + " ★ trung bình" : "chưa có")</div></div>
+  <div class="stat"><div class="l">Yêu thích</div><div class="v">@Model.FavoriteCount</div><div class="s">chỗ nghỉ đã lưu</div></div>
+  <div class="stat"><div class="l">Hoạt động cuối</div><div class="v" style="font-size:1rem">@(Model.LastAt.HasValue ? Model.LastAt.Value.ToString("dd/MM/yyyy") : "—")</div><div class="s">@(p.LastLogin != null ? "Đăng nhập " + ((DateTime)p.LastLogin).ToString("dd/MM HH:mm") : "chưa đăng nhập")</div></div>
+</div>
+
+<div class="tabs" role="tablist">
+  <button class="on" data-tab="t-over" role="tab">@Html.Icon("activity", 16) Tổng quan</button>
+  <button data-tab="t-book" role="tab">@Html.Icon("bed", 16) Đặt phòng <span class="pill">@Model.Bookings.Count</span></button>
+  <button data-tab="t-fl" role="tab">@Html.Icon("plane", 16) Vé máy bay <span class="pill">@Model.Tickets.Count</span></button>
+  <button data-tab="t-pay" role="tab">@Html.Icon("credit-card", 16) Thanh toán <span class="pill">@Model.Payments.Count</span></button>
+  <button data-tab="t-like" role="tab">@Html.Icon("heart", 16) Yêu thích & đánh giá <span class="pill">@(Model.Favorites.Count + Model.Reviews.Count)</span></button>
+  <button data-tab="t-beh" role="tab">@Html.Icon("eye", 16) Hành vi <span class="pill">@Model.Behavior.Count</span></button>
+</div>
+
+<div class="tabpane on" id="t-over"><div class="row g-3">
+  <div class="col-lg-7"><div class="panel"><h2>Dòng thời gian hoạt động <small>@Model.Timeline.Count sự kiện gần nhất</small></h2>
+    <ul class="tl">@foreach (var e in Model.Timeline) { <li><span class="dot @e.Kind">@Html.Icon(kindIcon(e.Kind), 16)</span><div><div class="tt">@if (e.Url != null) { <a href="@e.Url">@e.Title</a> } else { @e.Title }</div><div class="dd">@e.Detail</div><div class="tm">@e.At.ToString("HH:mm dd/MM/yyyy")</div></div></li> }</ul>
+    @if (Model.Timeline.Count == 0) { <div class="empty">Khách chưa có hoạt động.</div> }</div></div>
+  <div class="col-lg-5">
+    <div class="panel mb-3"><h2>Hồ sơ</h2><dl class="kv">
+      <dt>Họ tên</dt><dd>@p.HoTen</dd><dt>Email</dt><dd>@p.Email</dd><dt>Điện thoại</dt><dd>@(p.SoDienThoai ?? "—")</dd>
+      <dt>Mã khách</dt><dd class="mono">KH-@(((int)p.MaKH).ToString("0000"))</dd>
+      @if (p.AccountId != null) { <dt>Tên đăng nhập</dt><dd>@p.UserName</dd><dt>Vai trò</dt><dd>@p.RoleName</dd><dt>Đăng nhập cuối</dt><dd>@(p.LastLogin == null ? "—" : ((DateTime)p.LastLogin).ToString("HH:mm dd/MM/yyyy"))</dd>
+        if ((int)(p.FailedLogins ?? 0) > 0) { <dt>Đăng nhập sai</dt><dd>@p.FailedLogins lần@(p.LockedUntil != null ? " · khóa đến " + ((DateTime)p.LockedUntil).ToString("HH:mm dd/MM") : "")</dd> } }
+    </dl></div>
+    <div class="panel"><h2>Điểm đến yêu thích</h2>
+      @foreach (var c in Model.TopCities) { <div class="mb-2"><div class="d-flex justify-content-between small"><strong>@c.Key</strong><span>@c.Value lượt đặt</span></div><div class="hbar"><i style="width:@(c.Value * 100 / maxCity)%"></i></div></div> }
+      @if (Model.TopCities.Count == 0) { <div class="text-muted small">Chưa có dữ liệu đặt phòng.</div> }</div>
+  </div></div></div>
+
+<div class="tabpane" id="t-book"><div class="panel">
+  @foreach (var b in Model.Bookings)
+  {
+    <div class="bk">
+      <div class="dt"><small>@b.CheckIn.ToString("MMM", vi)</small><b>@b.CheckIn.Day</b><small>@b.Nights đêm</small></div>
+      <div><h3><a href="@Url.Action("Details", "Bookings", new { id = b.Id })">@b.Hotel</a> <span class="mono text-muted fs-6 fw-normal">@b.Code</span></h3>
+        <div class="small text-muted">@b.City · @b.Rooms</div>
+        <div class="facts"><span>@Html.Icon("calendar", 13) @b.CheckIn.ToString("dd/MM/yyyy") → @b.CheckOut.ToString("dd/MM/yyyy")</span><span>@Html.Icon("users", 13) @b.Adults người lớn@(b.Children > 0 ? ", " + b.Children + " trẻ em" : "")</span><span>@Html.Icon("clock", 13) Đặt @b.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>@if (!string.IsNullOrEmpty(b.Method)) { <span>@Html.Icon("credit-card", 13) @b.Method</span> }@if (!string.IsNullOrEmpty(b.Promo)) { <span>@Html.Icon("tag", 13) Mã @b.Promo</span> }</div>
+        @if (!string.IsNullOrEmpty(b.Note)) { <div class="small mt-1"><em>Yêu cầu: @b.Note</em></div> }
+        @if (!string.IsNullOrEmpty(b.CancelReason)) { <div class="warnline">Lý do hủy: @b.CancelReason</div> }</div>
+      <div class="amt"><b>@Html.Money(b.Total)</b>@if (b.Discount > 0) { <small>Đã giảm @Html.Money(b.Discount)</small><br /> }<small>Đã thu @Html.Money(b.Paid)</small><div class="mt-1">@Html.StatusBadge(b.Status)</div></div>
+    </div>
+  }
+  @if (!Model.Bookings.Any()) { <div class="empty">@Html.Icon("bed", 28)Khách chưa đặt phòng nào.</div> }
+</div></div>
+
+<div class="tabpane" id="t-fl"><div class="panel">
+  @foreach (var t in Model.Tickets)
+  {
+    <div class="bk">
+      <div class="dt"><small>@t.Departs.ToString("MMM", vi)</small><b>@t.Departs.Day</b><small>@t.Departs.ToString("HH:mm")</small></div>
+      <div><h3><a href="@Url.Action("Details", "Tickets", new { id = t.Id })">@t.FromCode → @t.ToCode</a> <span class="mono text-muted fs-6 fw-normal">@t.Code</span>@if (t.IsSample) { <span class="sample ms-1">mẫu</span> }</h3>
+        <div class="small text-muted">@t.FromName → @t.ToName · @t.AirlineName <span class="mono">@t.FlightCode</span></div>
+        <div class="facts"><span>@Html.Icon("user", 13) @t.Passenger</span><span>Ghế <strong class="mono">@t.Seat</strong> · @t.Class</span><span>@Html.Icon("briefcase", 13) @(t.BaggageKg.HasValue ? t.BaggageKg + " kg" : "—")</span><span>@Html.Icon("clock", 13) Đặt @t.BookedAt.ToString("dd/MM/yyyy")</span><span>Chuyến: @Html.FlightBadge(t.FlightStatus)</span></div>
+        @if (!string.IsNullOrEmpty(t.CancelReason)) { <div class="warnline">Lý do hủy: @t.CancelReason</div> }</div>
+      <div class="amt"><b>@Html.Money(t.Price)</b><div class="mt-1">@Html.TicketBadge(t.Status, t.StatusCode)</div></div>
+    </div>
+  }
+  @if (!Model.Tickets.Any()) { <div class="empty">@Html.Icon("plane", 28)Khách chưa đặt vé máy bay nào.</div> }
+</div></div>
+
+<div class="tabpane" id="t-pay"><div class="panel"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Thời gian</th><th>Đơn đặt phòng</th><th>Cổng</th><th>Mã tham chiếu</th><th class="text-end">Số tiền</th><th>Trạng thái</th></tr></thead><tbody>
+  @foreach (var x in Model.Payments) { <tr><td>@x.At.ToString("HH:mm dd/MM/yyyy")</td><td><a class="mono" href="@Url.Action("Details", "Bookings", new { id = x.BookingId })">@x.BookingCode</a></td><td>@x.Method</td><td class="small mono">@x.Reference</td><td class="text-end">@Html.Money(x.Amount)</td><td>@Html.PayBadge(x.Status)</td></tr> }
+  @if (!Model.Payments.Any()) { <tr><td colspan="6" class="empty">Chưa có giao dịch thanh toán.</td></tr> }
+</tbody></table></div><div class="small text-muted mt-2">Vé máy bay hiện chưa gắn cổng thanh toán trực tuyến nên không xuất hiện ở đây.</div></div></div>
+
+<div class="tabpane" id="t-like"><div class="row g-3">
+  <div class="col-lg-6"><div class="panel"><h2>Chỗ nghỉ yêu thích</h2>
+    @foreach (var f in Model.Favorites) { <div class="d-flex justify-content-between py-2 border-bottom"><span><strong>@f.Hotel</strong><span class="d-block small text-muted">@f.City · @f.Stars sao</span></span><span class="small text-muted">@f.At.ToString("dd/MM/yyyy")</span></div> }
+    @if (!Model.Favorites.Any()) { <div class="empty">Chưa lưu chỗ nghỉ nào.</div> }</div></div>
+  <div class="col-lg-6"><div class="panel"><h2>Đánh giá đã viết</h2>
+    @foreach (var r in Model.Reviews) { <div class="py-2 border-bottom"><div class="d-flex justify-content-between"><strong>@r.Hotel</strong><span>@Html.Stars(r.Stars)</span></div><div class="small">@r.Content</div><div class="small text-muted">@r.At.ToString("dd/MM/yyyy")@if (r.IsSample) { <span class="sample ms-1">mẫu</span> }@if (!r.Visible) { <span class="chip gray ms-1">Đã ẩn</span> }</div></div> }
+    @if (!Model.Reviews.Any()) { <div class="empty">Chưa có đánh giá.</div> }</div></div></div></div>
+
+<div class="tabpane" id="t-beh"><div class="panel"><h2>Hành vi duyệt web gần đây <small>40 sự kiện mới nhất</small></h2><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Thời gian</th><th>Hành động</th><th>Đối tượng</th><th class="text-end">Thời lượng</th></tr></thead><tbody>
+  @foreach (var b in Model.Behavior) { <tr><td class="small">@b.At.ToString("HH:mm dd/MM/yyyy")</td><td><span class="chip">@beh(b.Type)</span></td><td>@b.Target</td><td class="text-end small">@(b.Duration.HasValue && b.Duration > 0 ? b.Duration + " giây" : "—")</td></tr> }
+  @if (!Model.Behavior.Any()) { <tr><td colspan="4" class="empty">Chưa ghi nhận hành vi.</td></tr> }
+</tbody></table></div></div></div>
+
+@section scripts {
+<script>
+  (function () {
+    var btns = document.querySelectorAll('.tabs button');
+    function show(id) { btns.forEach(function (b) { b.classList.toggle('on', b.dataset.tab === id); }); document.querySelectorAll('.tabpane').forEach(function (p) { p.classList.toggle('on', p.id === id); }); try { history.replaceState(null, '', '#' + id); } catch (e) { } }
+    btns.forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.tab); }); });
+    var h = (location.hash || '').slice(1); if (h && document.getElementById(h)) show(h);
+  })();
+</script>
+}

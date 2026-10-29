@@ -1,0 +1,9 @@
+@model PriceQuote
+<table class="price-table">
+  @foreach (var g in Model.Nights.GroupBy(n => n.Price)) { <tr><td>@g.Count() đêm × @Html.Money(g.Key)@(Model.Quantity > 1 ? " × " + Model.Quantity + " phòng" : "")</td><td>@Html.Money(g.Key * g.Count() * Model.Quantity)</td></tr> }
+  <tr><td>Tiền phòng</td><td>@Html.Money(Model.Subtotal)</td></tr>
+  @if (Model.Discount > 0) { <tr><td>Giảm giá @(string.IsNullOrEmpty(Model.CouponCode) ? "" : "(" + Model.CouponCode + ")")</td><td>−@Html.Money(Model.Discount)</td></tr> }
+  @if (Model.ServiceFee > 0) { <tr><td>Phụ phí dịch vụ</td><td>@Html.Money(Model.ServiceFee)</td></tr> }
+  @if (Model.Tax > 0) { <tr><td>Thuế VAT (@((Model.TaxRate * 100).ToString("0.##"))%)</td><td>@Html.Money(Model.Tax)</td></tr> }
+  <tr class="total"><td>Tổng thanh toán</td><td>@Html.Money(Model.Total)</td></tr>
+</table>

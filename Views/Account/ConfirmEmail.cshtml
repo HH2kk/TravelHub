@@ -1,0 +1,4 @@
+<div class="auth-wrap"><div class="box text-center">
+@if ((bool)ViewBag.Success) { @Html.Icon("check", 40)<h1 class="h4 mt-2">Đã xác minh email</h1><p>Cảm ơn bạn! Vui lòng đăng nhập để tiếp tục.</p><a class="btn btn-primary" href="@Url.Action("Login")">Đăng nhập</a> }
+else { @Html.Icon("alert", 40)<h1 class="h4 mt-2">Liên kết không hợp lệ</h1><p>Liên kết đã hết hạn hoặc đã được sử dụng. Hãy đăng nhập và yêu cầu gửi lại email xác minh.</p><a class="btn btn-primary" href="@Url.Action("Login")">Đăng nhập</a> }
+</div></div>

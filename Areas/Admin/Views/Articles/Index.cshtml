@@ -1,0 +1,5 @@
+@model List<dynamic>
+<div class="d-flex justify-content-between align-items-center mb-3"><h1 class="mb-0">Bài viết</h1><a class="btn btn-primary" href="@Url.Action("Create")">@Html.Icon("plus", 16) Thêm bài viết</a></div>
+<div class="panel"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tiêu đề</th><th>Danh mục</th><th>Tác giả</th><th>Ngày</th><th>Lượt xem</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+@foreach (var a in Model) { <tr><td><a href="@Url.Action("Edit", new { id = (int)a.MaBaiViet })"><strong>@a.TieuDe</strong></a></td><td>@a.DanhMuc</td><td>@a.TacGia</td><td class="small">@(((DateTime)a.NgayDang).ToString("dd/MM/yyyy"))</td><td>@a.LuotXem</td><td><span class="badge-st @((bool)a.TrangThai ? "ok" : "warn")">@((bool)a.TrangThai ? "Đã xuất bản" : "Nháp")</span></td>
+ <td>@using (Html.BeginForm("Toggle", "Articles", new { area = "Admin" }, FormMethod.Post)) { @Html.AntiForgeryToken() <input type="hidden" name="id" value="@a.MaBaiViet" /><button class="btn btn-ghost btn-sm" type="submit">@((bool)a.TrangThai ? "Gỡ xuống" : "Xuất bản")</button> }</td></tr> }</tbody></table></div></div>

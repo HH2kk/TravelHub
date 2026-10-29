@@ -1,0 +1,10 @@
+﻿bin/
+obj/
+packages/
+.vs/
+*.user
+App_Data/secrets.config
+App_Data/mail/
+App_Data/uploads/
+
+App_Data/dev-accounts.txt

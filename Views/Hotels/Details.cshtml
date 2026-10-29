@@ -1,0 +1,119 @@
+@model TravelHub.Controllers.HotelDetailViewModel
+@{ var h = Model.Hotel; var s = Model.Stay; var imgs = h.Images; bool dates = s.HasDates; }
+<div class="container py-4">
+  <nav aria-label="breadcrumb"><ol class="breadcrumb small"><li class="breadcrumb-item"><a href="/">Trang chủ</a></li><li class="breadcrumb-item"><a href="@Url.Action("Index", "Hotels", new { destinationId = h.DestinationId })">@h.DestinationName</a></li><li class="breadcrumb-item active" aria-current="page">@h.Name</li></ol></nav>
+
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+    <div><h1 class="h2 mb-1">@h.Name</h1>
+      <div>@Html.Stars(h.Stars) <span class="chip gray">@h.PropertyType</span></div>
+      <div class="text-muted mt-1">@Html.Icon("map-pin", 16) @h.Address ·
+        <a target="_blank" rel="noopener" href="@(h.Lat.HasValue ? "https://www.google.com/maps/search/?api=1&query=" + h.Lat.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "," + h.Lng.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "https://www.google.com/maps/search/?api=1&query=" + Uri.EscapeDataString(h.Name + " " + h.Address))">Xem bản đồ</a></div></div>
+    <div class="d-flex align-items-center gap-2">
+      @if (h.ReviewCount > 0) { <div class="text-end"><div class="fw-bold">@h.Rating.ToString("0.0")/5</div><div class="small text-muted">@h.ReviewCount đánh giá</div></div><span class="score">@h.Rating.ToString("0.0")</span> }
+      <button type="button" class="btn btn-ghost fav-btn-inline fav-btn @(Model.IsFavorite ? "on" : "")" style="position:static" data-id="@h.Id" aria-pressed="@(Model.IsFavorite ? "true" : "false")" aria-label="Yêu thích">@Html.Icon("heart", 18)</button>
+    </div>
+  </div>
+
+  <div class="gallery n@(Math.Min(5, imgs.Count)) mb-4" role="group" aria-label="Thư viện ảnh">
+    @for (int i = 0; i < Math.Min(5, imgs.Count); i++)
+    {
+      <button type="button" data-lb="@imgs[i].DuongDanAnh" data-cap="@(imgs[i].MoTa ?? h.Name)" aria-label="Xem ảnh @(i + 1): @(imgs[i].MoTa ?? h.Name)">
+        <img src="@Html.Img(imgs[i].DuongDanAnh)" alt="@(imgs[i].MoTa ?? h.Name)" @(i == 0 ? "" : "loading=lazy") />
+        @if (i == 4 && imgs.Count > 5) { <span class="more">+@(imgs.Count - 5) ảnh</span> }
+      </button>
+    }
+  </div>
+  @for (int i = 5; i < imgs.Count; i++) { <span hidden data-lb="@imgs[i].DuongDanAnh" data-cap="@(imgs[i].MoTa ?? h.Name)"></span> }
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <section class="mb-4"><h2 class="h5">Giới thiệu</h2><p>@h.Description</p>
+        <div>@foreach (var a in h.AmenityList) { <span class="amenity">@Html.Icon("check", 16) @a.Name</span> }</div></section>
+
+      <section id="rooms" class="mb-4" aria-labelledby="rooms-h">
+        <h2 class="h5" id="rooms-h">Loại phòng &amp; giá</h2>
+        <form method="get" action="@Url.Action("Details", "Hotels")#rooms" class="box mb-3">
+          <input type="hidden" name="id" value="@h.Id" />
+          @if (Model.Error != null) { <div class="alert alert-warning py-2">@Model.Error</div> }
+          <div class="row g-2 align-items-end">
+            <div class="col-6 col-md-3"><label class="form-label" for="d-in">Nhận phòng</label><input id="d-in" type="date" name="checkIn" class="form-control" value="@(s.CheckIn.HasValue ? s.CheckIn.Value.ToString("yyyy-MM-dd") : "")" /></div>
+            <div class="col-6 col-md-3"><label class="form-label" for="d-out">Trả phòng</label><input id="d-out" type="date" name="checkOut" class="form-control" value="@(s.CheckOut.HasValue ? s.CheckOut.Value.ToString("yyyy-MM-dd") : "")" /></div>
+            <div class="col-4 col-md-2"><label class="form-label" for="d-ad">Người lớn</label><input id="d-ad" type="number" min="1" max="20" name="adults" class="form-control" value="@s.Adults" /></div>
+            <div class="col-4 col-md-2"><label class="form-label" for="d-ch">Trẻ em</label><input id="d-ch" type="number" min="0" max="20" name="children" class="form-control" value="@s.Children" /></div>
+            <div class="col-4 col-md-2"><label class="form-label" for="d-rm">Phòng</label><input id="d-rm" type="number" min="1" max="10" name="rooms" class="form-control" value="@s.Rooms" /></div>
+          </div>
+          <button class="btn btn-primary mt-2" type="submit">Kiểm tra phòng trống</button>
+        </form>
+        @if (!dates) { <p class="small text-muted">Chọn ngày nhận/trả phòng để xem tình trạng còn phòng và tổng giá chính xác.</p> }
+        <div class="d-grid gap-3">
+        @foreach (var r in Model.Rooms)
+        {
+          bool fits = r.MaxGuests * s.Rooms >= s.Guests; bool ok = dates && fits && r.Available >= s.Rooms;
+          <article class="room-card">
+            <div class="rimg">
+              @if (r.Images.Count > 0) { <button type="button" class="border-0 p-0 w-100 h-100" data-lb="@r.Images[0].Url" data-cap="@r.Name"><img src="@Html.Img(r.Images[0].Url)" alt="@r.Name" loading="lazy" /></button> }
+              @for (int i = 1; i < r.Images.Count; i++) { <span hidden data-lb="@r.Images[i].Url" data-cap="@r.Name – @r.Images[i].Kind"></span> }
+            </div>
+            <div class="rbody">
+              <h3 class="h6 mb-1">@r.Name</h3>
+              <div class="small text-muted mb-2">@r.RoomType · @Html.Icon("users", 14) tối đa @r.MaxGuests khách · @Html.Icon("bed", 14) @(r.BedCount ?? 1) giường</div>
+              <p class="small mb-2">@r.Description</p>
+              @if (r.Images.Count > 1) { <div class="d-flex gap-1 flex-wrap">@foreach (var im in r.Images.Skip(1).Take(4)) { <img src="@Html.Img(im.Url)" alt="@(im.Caption ?? r.Name)" width="64" height="44" style="object-fit:cover;border-radius:6px" loading="lazy" /> }</div> }
+              <div class="mt-2"><span class="chip">@Html.Icon("check", 12) @h.CancelPolicy</span> @if (h.BreakfastIncluded) { <span class="chip teal">Bao gồm bữa sáng</span> }</div>
+            </div>
+            <div class="rside">
+              <div>@if (dates) { if (!fits) { <span class="chip gray">Vượt sức chứa</span> } else if (r.Available == 0) { <span class="chip" style="background:#fee2e2;color:#991b1b">Hết phòng</span> } else if (r.Available <= 3) { <span class="chip" style="background:#fef3c7;color:#92400e">Chỉ còn @r.Available phòng</span> } else { <span class="chip teal">Còn phòng</span> } }</div>
+              <div><div class="price">@Html.Money(r.Price)<small> /đêm</small></div>
+                @if (dates) { <div class="small text-muted">@s.Nights đêm × @s.Rooms phòng ≈ <strong>@Html.Money(r.Price * s.Nights * s.Rooms)</strong></div> }
+                @if (ok)
+                {
+                  using (Html.BeginForm("Checkout", "Booking", FormMethod.Get, new { @class = "mt-2" }))
+                  {
+                    <input type="hidden" name="HotelId" value="@h.Id" /><input type="hidden" name="RoomId" value="@r.Id" />
+                    <input type="hidden" name="CheckIn" value="@s.CheckIn.Value.ToString("yyyy-MM-dd")" /><input type="hidden" name="CheckOut" value="@s.CheckOut.Value.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="Adults" value="@s.Adults" /><input type="hidden" name="Children" value="@s.Children" /><input type="hidden" name="Rooms" value="@s.Rooms" />
+                    <button class="btn btn-primary no-loading" type="submit">Đặt phòng</button>
+                  }
+                }
+                else if (!dates) { <a class="btn btn-outline-primary mt-2" href="#d-in">Chọn ngày</a> }
+              </div>
+            </div>
+          </article>
+        }
+        </div>
+      </section>
+
+      <section class="mb-4"><h2 class="h5">Quy định &amp; chính sách</h2>
+        <div class="box"><ul class="mb-0">
+          <li><strong>Nhận phòng:</strong> từ @h.CheckInTime · <strong>Trả phòng:</strong> trước @h.CheckOutTime</li>
+          <li><strong>Chính sách hủy:</strong> @h.CancelPolicyText</li>
+          <li><strong>Chính sách chung:</strong> @(string.IsNullOrWhiteSpace(h.Policy) ? "Vui lòng liên hệ chỗ nghỉ để biết thêm về chính sách trẻ em và vật nuôi." : h.Policy)</li>
+        </ul></div></section>
+
+      @if (Model.Attractions.Any()) {
+      <section class="mb-4"><h2 class="h5">Địa điểm tham quan tại @h.DestinationName</h2>
+        <div class="row g-3">@foreach (var a in Model.Attractions.Take(4)) { <div class="col-sm-6"><div class="card-th d-flex"><img src="@Html.Img(a.ImageUrl)" alt="@a.Name" style="width:110px;object-fit:cover" loading="lazy" /><div class="p-3"><strong>@a.Name</strong><div class="small text-muted">@a.Category@(a.TicketPrice.HasValue ? " · Vé " + Html.Money(a.TicketPrice.Value) : "")</div></div></div></div> }</div>
+        <p class="small text-muted mt-2">Thông tin do quản trị viên TravelHub cung cấp; khoảng cách thực tế có thể khác.</p></section> }
+
+      <section class="mb-4" id="reviews"><h2 class="h5">Đánh giá của khách (@Model.Reviews.Count)</h2>
+        @if (Model.Reviews.Count == 0) { <p class="text-muted">Chưa có đánh giá nào. Chỉ khách đã lưu trú mới có thể đánh giá.</p> }
+        @foreach (var rv in Model.Reviews) { <div class="review"><div class="d-flex justify-content-between"><strong>@rv.CustomerName</strong><span class="small text-muted">@Html.Date(rv.CreatedAt)</span></div>@Html.Stars(rv.Rating)<p class="mb-0 mt-1">@rv.Content</p></div> }
+      </section>
+
+      <section class="mb-4"><h2 class="h5">Câu hỏi thường gặp</h2>
+        <div class="accordion" id="faq">
+          <div class="accordion-item"><h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#q1">Tôi có thể hủy đặt phòng không?</button></h3><div id="q1" class="accordion-collapse collapse" data-bs-parent="#faq"><div class="accordion-body">@h.CancelPolicyText</div></div></div>
+          <div class="accordion-item"><h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#q2">Khi nào đặt phòng được xác nhận?</button></h3><div id="q2" class="accordion-collapse collapse" data-bs-parent="#faq"><div class="accordion-body">Sau khi cổng thanh toán xác nhận giao dịch thành công, bạn sẽ nhận email xác nhận và biên nhận PDF.</div></div></div>
+          <div class="accordion-item"><h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#q3">Phòng được giữ bao lâu?</button></h3><div id="q3" class="accordion-collapse collapse" data-bs-parent="#faq"><div class="accordion-body">Sau khi tạo đơn, phòng được giữ @AppConfig.HoldMinutes phút để bạn thanh toán.</div></div></div>
+        </div></section>
+    </div>
+
+    <aside class="col-lg-4"><div class="sticky-box">
+      <div class="box mb-3"><div class="small text-muted">Giá mỗi đêm từ</div><div class="price" style="font-size:1.7rem">@Html.Money(h.PriceFrom)</div><a href="#rooms" class="btn btn-primary w-100 mt-2">Xem phòng &amp; đặt</a></div>
+      <div class="box"><h2 class="h6">Liên hệ chỗ nghỉ</h2>
+        @if (!string.IsNullOrEmpty(h.Phone)) { <div>Điện thoại: <a href="tel:@h.Phone">@h.Phone</a></div> }
+        @if (!string.IsNullOrEmpty(h.Email)) { <div>Email: <a href="mailto:@h.Email">@h.Email</a></div> }
+        <div class="small text-muted mt-2">@h.Address</div></div>
+    </div></aside>
+  </div>
+</div>

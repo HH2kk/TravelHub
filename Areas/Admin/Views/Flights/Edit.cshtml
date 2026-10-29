@@ -1,0 +1,33 @@
+@model TravelHub.Areas.Admin.Controllers.FlightEditModel
+@{ var airlines = (List<dynamic>)ViewBag.Airlines; Func<DateTime?, string> dt = d => d.HasValue ? d.Value.ToString("yyyy-MM-ddTHH:mm") : ""; }
+<div class="ph"><div><div class="crumbs">@Html.ActionLink("Chuyến bay", "Index") /</div><h1>@(Model.Id == 0 ? "Thêm chuyến bay" : "Sửa chuyến " + Model.Code)</h1></div></div>
+@using (Html.BeginForm("Save", "Flights", new { area = "Admin" }, FormMethod.Post)) {
+  @Html.AntiForgeryToken() @Html.HiddenFor(m => m.Id)
+  @Html.ValidationSummary(true, null, new { @class = "alert alert-danger" })
+  <div class="row g-3"><div class="col-lg-8">
+    <div class="panel mb-3"><h2>Hành trình</h2><div class="row g-3">
+      <div class="col-md-6"><label class="form-label" for="AirlineId">Hãng bay</label><select class="form-select" id="AirlineId" name="AirlineId">@foreach (var a in airlines) { <option value="@a.MaHangBay" @((int)a.MaHangBay == Model.AirlineId ? "selected" : "")>@a.TenHangBay (@a.MaIATA)</option> }</select>@Html.ValidationMessageFor(m => m.AirlineId)</div>
+      <div class="col-md-6"><label class="form-label" for="Code">Mã chuyến</label><input class="form-control" id="Code" name="Code" value="@Model.Code" maxlength="10" placeholder="VN123" style="text-transform:uppercase" />@Html.ValidationMessageFor(m => m.Code)</div>
+      <div class="col-md-3"><label class="form-label" for="FromCode">Sân bay đi (IATA)</label><input class="form-control" id="FromCode" name="FromCode" value="@Model.FromCode" maxlength="3" placeholder="SGN" style="text-transform:uppercase" />@Html.ValidationMessageFor(m => m.FromCode)</div>
+      <div class="col-md-9"><label class="form-label" for="FromName">Nơi đi</label><input class="form-control" id="FromName" name="FromName" value="@Model.FromName" maxlength="100" placeholder="TP. Hồ Chí Minh" />@Html.ValidationMessageFor(m => m.FromName)</div>
+      <div class="col-md-3"><label class="form-label" for="ToCode">Sân bay đến (IATA)</label><input class="form-control" id="ToCode" name="ToCode" value="@Model.ToCode" maxlength="3" placeholder="DAD" style="text-transform:uppercase" />@Html.ValidationMessageFor(m => m.ToCode)</div>
+      <div class="col-md-9"><label class="form-label" for="ToName">Nơi đến</label><input class="form-control" id="ToName" name="ToName" value="@Model.ToName" maxlength="100" placeholder="Đà Nẵng" />@Html.ValidationMessageFor(m => m.ToName)</div>
+      <div class="col-md-6"><label class="form-label" for="Departs">Khởi hành</label><input class="form-control" type="datetime-local" id="Departs" name="Departs" value="@dt(Model.Departs)" />@Html.ValidationMessageFor(m => m.Departs)</div>
+      <div class="col-md-6"><label class="form-label" for="Arrives">Hạ cánh</label><input class="form-control" type="datetime-local" id="Arrives" name="Arrives" value="@dt(Model.Arrives)" />@Html.ValidationMessageFor(m => m.Arrives)</div>
+    </div></div>
+    <div class="panel"><h2>Giá & sức chứa</h2><div class="row g-3">
+      <div class="col-md-4"><label class="form-label" for="Price">Giá phổ thông (₫)</label><input class="form-control" type="number" min="0" step="1000" id="Price" name="Price" value="@Model.Price.ToString("0")" />@Html.ValidationMessageFor(m => m.Price)</div>
+      <div class="col-md-4"><label class="form-label" for="BusinessPrice">Giá thương gia (₫)</label><input class="form-control" type="number" min="0" step="1000" id="BusinessPrice" name="BusinessPrice" value="@(Model.BusinessPrice.HasValue ? Model.BusinessPrice.Value.ToString("0") : "")" placeholder="Để trống nếu không có" />@Html.ValidationMessageFor(m => m.BusinessPrice)</div>
+      <div class="col-md-4"><label class="form-label" for="BaggageKg">Hành lý (kg)</label><input class="form-control" type="number" min="0" max="60" id="BaggageKg" name="BaggageKg" value="@Model.BaggageKg" /></div>
+      <div class="col-md-4"><label class="form-label" for="Seats">Tổng số ghế</label><input class="form-control" type="number" min="1" id="Seats" name="Seats" value="@Model.Seats" />@Html.ValidationMessageFor(m => m.Seats)@if (Model.Id > 0) { <div class="form-text">Đã bán @(ViewBag.Sold ?? 0) ghế.</div> }</div>
+      <div class="col-md-4"><label class="form-label" for="Aircraft">Loại máy bay</label><input class="form-control" id="Aircraft" name="Aircraft" value="@Model.Aircraft" maxlength="60" placeholder="Airbus A321" /></div>
+      <div class="col-md-4"><label class="form-label" for="Gate">Cửa ra</label><input class="form-control" id="Gate" name="Gate" value="@Model.Gate" maxlength="10" placeholder="A3" /></div>
+      <div class="col-12"><label class="form-label" for="Note">Ghi chú</label><input class="form-control" id="Note" name="Note" value="@Model.Note" maxlength="300" /></div>
+    </div></div>
+  </div><div class="col-lg-4"><div class="panel">
+    <h2>Xuất bản</h2>
+    <div class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" id="Active" name="Active" value="true" @(Model.Active ? "checked" : "") /><input type="hidden" name="Active" value="false" /><label class="form-check-label" for="Active">Đang mở bán</label></div>
+    <button class="btn btn-primary w-100 mb-2" type="submit">Lưu chuyến bay</button>
+    <a class="btn btn-ghost w-100" href="@(Model.Id > 0 ? Url.Action("Details", new { id = Model.Id }) : Url.Action("Index"))">Hủy</a>
+  </div></div></div>
+}

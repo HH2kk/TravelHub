@@ -1,0 +1,13 @@
+@model DestinationItem
+@{ var hotels = (List<HotelCard>)ViewBag.Hotels; var att = (List<AttractionItem>)ViewBag.Attractions; var arts = (List<ArticleRow>)ViewBag.Articles; }
+<div style="position:relative;height:340px;background:#102a43 url('@Html.Img(Model.ImageUrl)') center/cover"><div style="position:absolute;inset:0;background:linear-gradient(0deg,rgba(8,20,35,.75),rgba(8,20,35,.1))"></div>
+  <div class="container position-relative h-100 d-flex flex-column justify-content-end pb-4 text-white"><h1 class="text-white">@Model.Name</h1><p class="mb-0" style="max-width:700px">@Model.Description</p></div></div>
+<div class="container py-4">
+  <div class="d-flex flex-wrap gap-2 mb-4">@if (!string.IsNullOrEmpty(Model.TravelStyle)) { <span class="chip">Phong cách: @Model.TravelStyle</span> }<span class="chip teal">@Model.City</span></div>
+  <div class="section-title"><h2 class="h4">Chỗ nghỉ tại @Model.Name</h2><a href="@Url.Action("Index", "Hotels", new { destinationId = Model.Id })">Xem tất cả</a></div>
+  @if (hotels.Any()) { @Html.Partial("_HotelGrid", hotels) } else { <div class="empty">Chưa có chỗ nghỉ tại điểm đến này.</div> }
+  @if (att.Any()) { <div class="section-title mt-5"><h2 class="h4">Địa điểm tham quan</h2></div>
+    <div class="row g-3">@foreach (var a in att) { <div class="col-md-6 col-lg-3"><div class="card-th"><div class="thumb"><img src="@Html.Img(a.ImageUrl)" alt="@a.Name" loading="lazy" /></div><div class="body"><h3>@a.Name</h3><span class="chip gray">@a.Category</span><p class="small text-muted mt-2 mb-0">@a.Description</p>@if (a.TicketPrice.HasValue) { <div class="small mt-1">Vé tham khảo: <strong>@Html.Money(a.TicketPrice.Value)</strong></div> }</div></div></div> }</div> }
+  @if (arts.Any()) { <div class="section-title mt-5"><h2 class="h4">Cẩm nang liên quan</h2></div>
+    <div class="row g-3">@foreach (var a in arts) { <div class="col-md-4"><article class="card-th"><div class="thumb"><img src="@Html.Img(a.ImageUrl)" alt="@a.Title" loading="lazy" /></div><div class="body"><h3><a class="stretched" href="@Url.Action("Details", "Articles", new { id = a.Id })">@a.Title</a></h3><p class="small text-muted mb-0">@a.Summary</p></div></article></div> }</div> }
+</div>

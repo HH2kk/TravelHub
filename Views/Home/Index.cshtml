@@ -1,0 +1,77 @@
+@model TravelHub.Controllers.HomeViewModel
+@{ ViewBag.Hero = true; var favs = ViewBag.FavIds as HashSet<int>; ViewBag.Destinations = Model.Destinations;
+   var stays = Model.Favorites.Concat(Model.Popular).Concat(Model.Deals).GroupBy(h => h.Id).Select(g => g.First()).Take(4).ToList(); }
+<section class="hero" id="hero" aria-labelledby="hero-title">
+  @Html.Partial("_HeroScene")
+  <div class="container">
+    <div class="eyebrow">TravelHub · Du lịch Việt Nam</div>
+    <h1 id="hero-title"><span class="ln"><span>Chạm điểm đến.</span></span><span class="ln"><span>Mở hành trình.</span></span></h1>
+    <p class="lead">Khám phá những chỗ nghỉ đáng nhớ và trải nghiệm những hành trình theo cách của riêng bạn.</p>
+    @Html.Partial("_SearchForm", new SearchCriteria())
+  </div>
+  <a class="hero-scroll" href="#kham-pha" aria-label="Cuộn xuống khám phá"><span>Cuộn</span><i></i></a>
+</section>
+
+<div class="marquee" aria-hidden="true"><div class="track">
+  @for (int k = 0; k < 2; k++) { foreach (var d in Model.Destinations) { <span>@d.Name</span> } }
+</div></div>
+<section class="stats" aria-label="TravelHub trong số liệu"><div class="container"><div class="row g-4 pt-4">
+  <div class="col-6 col-lg-3"><div class="cell"><div class="n" data-count="@Model.Stats.Destinations">0</div><div class="l">Điểm đến</div></div></div>
+  <div class="col-6 col-lg-3"><div class="cell"><div class="n" data-count="@Model.Stats.Hotels">0</div><div class="l">Chỗ nghỉ đang mở bán</div></div></div>
+  <div class="col-6 col-lg-3"><div class="cell"><div class="n" data-count="@Model.Stats.RoomTypes">0</div><div class="l">Loại phòng</div></div></div>
+  <div class="col-6 col-lg-3"><div class="cell"><div class="n" data-count="@Model.Stats.Reviews">0</div><div class="l">Đánh giá từ khách</div></div></div>
+</div></div></section>
+
+<section id="kham-pha" class="section-xl pt-5" aria-labelledby="h-dest"><div class="container">
+  <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4 reveal">
+    <div><div class="kicker">Điểm đến</div><h2 id="h-dest" class="display-2 mt-2 mb-0">Bạn sẽ đi đâu tiếp theo?</h2></div>
+    <a class="btn btn-ghost" href="@Url.Action("Index", "Destinations")">Tất cả điểm đến @Html.Icon("chevron-right", 16)</a>
+  </div>
+  <div class="ed-grid reveal">
+    @{ int n = 0; }
+    @foreach (var d in Model.Destinations.Take(5)) { n++;
+      <a class="ed-card ed-@n" href="@Url.Action("Index", "Hotels", new { destinationId = d.Id })"><img src="@Html.Img(d.ImageUrl)" alt="@d.Name" @(n > 3 ? "loading=lazy" : "") /><span class="go">@Html.Icon("chevron-right", 18)</span><div class="cap"><h3>@d.Name</h3><small>@(string.IsNullOrEmpty(d.TravelStyle) ? d.City : d.TravelStyle + " · " + d.City)</small></div></a> }
+  </div>
+</div></section>
+
+<section class="section-dark py-5" aria-labelledby="h-stay"><div class="container">
+  <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4 reveal">
+    <div><div class="kicker">Chỗ nghỉ</div><h2 id="h-stay" class="display-2 mt-2 mb-0">Những nơi lưu trú xuất sắc</h2></div>
+    <a class="btn btn-ghost" href="@Url.Action("Index", "Hotels")">Xem tất cả @Html.Icon("chevron-right", 16)</a>
+  </div>
+  <div class="row g-4 reveal">
+  @foreach (var h in stays) { bool on = favs != null && favs.Contains(h.Id);
+    <div class="col-12 col-sm-6 col-lg-3"><article class="stay"><div class="ph"><a href="@Url.Action("Details", "Hotels", new { id = h.Id })" aria-label="Xem @h.Name"><img src="@Html.Img(h.CoverImageUrl)" alt="@h.Name" loading="lazy" /></a><span class="tag">@h.PropertyType</span>
+      <button type="button" class="fav-btn @(on ? "on" : "")" data-id="@h.Id" aria-pressed="@(on ? "true" : "false")" aria-label="Thêm @h.Name vào yêu thích">@Html.Icon("heart", 18)</button></div>
+      <div class="meta"><div class="d-flex justify-content-between gap-2"><h3><a class="text-reset" href="@Url.Action("Details", "Hotels", new { id = h.Id })">@h.Name</a></h3>@if (h.ReviewCount > 0) { <span class="small fw-bold text-nowrap">@Html.Icon("star", 14) @h.Rating.ToString("0.0")</span> }</div>
+        <div class="small text-muted">@Html.Icon("map-pin", 13) @h.DestinationName · @h.Stars sao</div>
+        <div class="d-flex flex-wrap gap-1 mt-2">@if (h.CancelPolicy != "NONREFUND") { <span class="chip teal">Miễn phí hủy</span> }@if (h.BreakfastIncluded) { <span class="chip">Bữa sáng</span> }</div>
+        <div class="row2"><span class="small text-muted">@(h.ReviewCount > 0 ? h.ReviewCount + " đánh giá" : "Chưa có đánh giá")</span><span class="price" style="font-size:1.1rem">@Html.Money(h.PriceFrom)<small>/đêm</small></span></div></div></article></div> }
+  </div>
+</div></section>
+
+@if (Model.Articles.Count >= 3) {
+<section class="py-5" aria-labelledby="h-exp"><div class="container">
+  <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4 reveal">
+    <div><div class="kicker">Trải nghiệm</div><h2 id="h-exp" class="display-2 mt-2 mb-0">Khám phá điều đáng nhớ</h2></div>
+    <a class="btn btn-ghost" href="@Url.Action("Index", "Articles")">Cẩm nang du lịch @Html.Icon("chevron-right", 16)</a>
+  </div>
+  <div class="exp-grid reveal">
+  @foreach (var a in Model.Articles.Take(3)) { <a class="exp" href="@Url.Action("Details", "Articles", new { id = a.Id })"><img src="@Html.Img(a.ImageUrl)" alt="@a.Title" loading="lazy" /><div class="in"><span class="chip">@a.Category</span><h3 class="mt-2">@a.Title</h3><p>@a.Summary</p><span class="more">Đọc tiếp @Html.Icon("chevron-right", 16)</span></div></a> }
+  </div>
+</div></section> }
+
+<section class="py-5" aria-labelledby="h-why"><div class="container">
+  <div class="mb-4 reveal"><div class="kicker">Vì sao chọn TravelHub</div><h2 id="h-why" class="display-2 mt-2 mb-0">Đặt phòng rõ ràng, an tâm hơn.</h2></div>
+  <div class="row g-4 reveal">
+    <div class="col-md-6 col-lg-3"><div class="why-line"><div class="n">01</div><h3>Giá minh bạch</h3><p>Xem rõ tiền phòng từng đêm, thuế và phụ phí trước khi đặt.</p></div></div>
+    <div class="col-md-6 col-lg-3"><div class="why-line"><div class="n">02</div><h3>Phòng trống thật</h3><p>Kiểm tra tồn phòng từng đêm; phòng được giữ cho bạn trong lúc thanh toán.</p></div></div>
+    <div class="col-md-6 col-lg-3"><div class="why-line"><div class="n">03</div><h3>Thanh toán an toàn</h3><p>Chỉ xác nhận khi cổng thanh toán đã xác minh giao dịch; không lưu thông tin thẻ.</p></div></div>
+    <div class="col-md-6 col-lg-3"><div class="why-line"><div class="n">04</div><h3>Hủy &amp; hoàn tiền rõ ràng</h3><p>Chính sách hủy hiển thị trước khi đặt, theo dõi hoàn tiền trong tài khoản.</p></div></div>
+  </div>
+</div></section>
+
+<section class="py-5"><div class="container">
+  <div class="final-cta reveal"><div class="in"><div class="kicker" style="color:#7ff0dd">Sẵn sàng khởi hành?</div><h2 class="mt-2">Ready for your next journey?</h2><p class="mb-4" style="opacity:.9">Chọn điểm đến, chọn ngày và để TravelHub lo phần còn lại.</p>
+    <a class="btn btn-light-pill" href="@Url.Action("Index", "Hotels")">Tìm chỗ nghỉ @Html.Icon("chevron-right", 16)</a></div></div>
+</div></section>

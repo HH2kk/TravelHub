@@ -1,0 +1,7 @@
+@model List<dynamic>
+@{ dynamic p = ViewBag.Payment; }
+<h1>Nhật ký giao dịch #@p.MaThanhToan</h1>
+<div class="panel mb-3 small">Booking <strong>@p.MaDonCode</strong> · @p.PhuongThuc · @Html.Money((decimal)p.SoTien) · @Html.PayBadge((string)p.TrangThai) · mã tham chiếu <code>@p.MaThamChieuVNPAY</code> · mã GD cổng <code>@p.MaGiaoDichCong</code></div>
+<div class="panel"><p class="small text-muted">Chữ ký và secret không được lưu; chỉ giữ tham số công khai phục vụ đối soát.</p><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Thời gian (UTC)</th><th>Nguồn</th><th>Chữ ký</th><th>Mã trả về</th><th>Dữ liệu</th></tr></thead><tbody>
+@foreach (var r in Model) { <tr><td class="small">@(((DateTime)r.NgayTao).ToString("dd/MM/yyyy HH:mm:ss"))</td><td>@r.Nguon</td><td>@((bool)r.ChuKyHopLe ? "Hợp lệ" : "KHÔNG hợp lệ")</td><td>@r.MaKetQua</td><td class="small" style="word-break:break-all">@r.DuLieu</td></tr> }
+@if (!Model.Any()) { <tr><td colspan="5" class="text-muted">Chưa có callback.</td></tr> }</tbody></table></div></div>

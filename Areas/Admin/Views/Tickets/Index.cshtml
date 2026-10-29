@@ -1,0 +1,36 @@
+@model List<TicketRow>
+@{ var f = (TicketFilter)ViewBag.F; var airlines = (List<dynamic>)ViewBag.Airlines; dynamic sum = ViewBag.Sum; }
+<div class="ph"><div><h1>Vé máy bay</h1><div class="sub">Toàn bộ vé khách đã đặt: hành khách, chuyến bay, ghế và trạng thái.</div></div>
+  <a class="btn btn-ghost btn-sm" href="@Url.Action("Export", new { q = f.q, status = f.status, airline = f.airline, flight = f.flight, customer = f.customer, from = f.from, to = f.to })">@Html.Icon("download", 16) Xuất CSV</a></div>
+<div class="stat-grid">
+  <div class="stat"><div class="l">Tổng số vé</div><div class="v">@sum.N</div></div>
+  <div class="stat"><div class="l">Đang hiệu lực</div><div class="v">@sum.B</div><div class="s">chưa làm thủ tục</div></div>
+  <div class="stat"><div class="l">Đã hủy</div><div class="v">@sum.C</div></div>
+  <div class="stat"><div class="l">Giá trị vé (không gồm hủy)</div><div class="v">@Html.Short((decimal)sum.V)</div><div class="s">@Html.Money((decimal)sum.V)</div></div>
+</div>
+<form method="get" class="filters-bar row g-2">
+  <div class="col-md-3"><input class="form-control" name="q" placeholder="Mã vé, hành khách, giấy tờ, email, chuyến…" value="@f.q" aria-label="Tìm" /></div>
+  <div class="col-md-2"><select class="form-select" name="status" aria-label="Trạng thái"><option value="">Mọi trạng thái</option>@foreach (var s in new[] { new[] { "Booked", "Đã đặt" }, new[] { "CheckedIn", "Đã làm thủ tục" }, new[] { "Completed", "Đã bay" }, new[] { "Cancelled", "Đã hủy" } }) { <option value="@s[0]" @(s[0] == f.status ? "selected" : "")>@s[1]</option> }</select></div>
+  <div class="col-md-2"><select class="form-select" name="airline" aria-label="Hãng"><option value="">Mọi hãng</option>@foreach (var a in airlines) { <option value="@a.MaIATA" @((string)a.MaIATA == f.airline ? "selected" : "")>@a.TenHangBay</option> }</select></div>
+  <div class="col-md-2"><input class="form-control" type="date" name="from" value="@(f.from.HasValue ? f.from.Value.ToString("yyyy-MM-dd") : "")" aria-label="Bay từ ngày" /></div>
+  <div class="col-md-2"><input class="form-control" type="date" name="to" value="@(f.to.HasValue ? f.to.Value.ToString("yyyy-MM-dd") : "")" aria-label="Bay đến ngày" /></div>
+  <div class="col-md-1"><button class="btn btn-primary w-100" type="submit">Lọc</button></div>
+  @if (f.flight.HasValue) { <input type="hidden" name="flight" value="@f.flight" /> }
+  @if (f.customer.HasValue) { <input type="hidden" name="customer" value="@f.customer" /> }
+</form>
+<div class="panel"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Mã vé</th><th>Hành khách</th><th>Hành trình</th><th>Khởi hành</th><th>Ghế</th><th class="text-end">Giá vé</th><th>Trạng thái</th><th>Đặt lúc</th></tr></thead><tbody>
+@foreach (var t in Model)
+{
+  <tr>
+    <td><a class="mono" href="@Url.Action("Details", new { id = t.Id })"><strong>@t.Code</strong></a>@if (t.IsSample) { <div><span class="sample">dữ liệu mẫu</span></div> }</td>
+    <td><strong>@t.Passenger</strong><div class="small text-muted"><a href="@Url.Action("Details", "Customers", new { id = t.CustomerId })">@t.CustomerName</a></div></td>
+    <td><a class="rowlink" href="@Url.Action("Details", "Flights", new { id = t.FlightId })">@Html.AirlineBadge(t.AirlineIata)<span><strong>@t.FromCode → @t.ToCode</strong><span class="d-block small text-muted mono">@t.FlightCode</span></span></a></td>
+    <td>@t.Departs.ToString("HH:mm")<div class="small text-muted">@t.Departs.ToString("dd/MM/yyyy")</div></td>
+    <td class="mono"><strong>@t.Seat</strong><div class="small text-muted" style="font-family:inherit">@t.Class</div></td>
+    <td class="text-end">@Html.Money(t.Price)</td>
+    <td>@Html.TicketBadge(t.Status, t.StatusCode)</td>
+    <td class="small">@Html.DateTimeText(t.BookedAt)</td>
+  </tr>
+}
+@if (!Model.Any()) { <tr><td colspan="8" class="empty">Không có vé phù hợp.</td></tr> }
+</tbody></table></div>@Html.Partial("_Pager")</div>

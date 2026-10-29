@@ -1,0 +1,28 @@
+@model List<CustomerListRow>
+@{ dynamic sum = ViewBag.Sum; string sort = ViewBag.Sort; }
+<div class="ph"><div><h1>Hồ sơ khách hàng</h1><div class="sub">Xem toàn bộ lịch sử đặt phòng, vé máy bay, thanh toán của từng khách.</div></div></div>
+<div class="stat-grid">
+  <div class="stat"><div class="l">Tổng khách</div><div class="v">@sum.N</div><div class="s">@sum.New30 khách mới trong 30 ngày</div></div>
+  <div class="stat"><div class="l">Từng đặt phòng</div><div class="v">@sum.WithBooking</div></div>
+  <div class="stat"><div class="l">Từng đặt vé bay</div><div class="v">@sum.WithTicket</div></div>
+</div>
+<form method="get" class="filters-bar row g-2">
+  <div class="col-md-6"><input class="form-control" name="q" value="@ViewBag.Q" placeholder="Tên, email, số điện thoại, tên đăng nhập" aria-label="Tìm khách" /></div>
+  <div class="col-md-4"><select class="form-select" name="sort" aria-label="Sắp xếp"><option value="">Hoạt động gần nhất</option><option value="spend" @(sort == "spend" ? "selected" : "")>Chi tiêu cao nhất</option><option value="bookings" @(sort == "bookings" ? "selected" : "")>Nhiều giao dịch nhất</option><option value="new" @(sort == "new" ? "selected" : "")>Mới đăng ký</option></select></div>
+  <div class="col-md-2"><button class="btn btn-primary w-100" type="submit">Lọc</button></div>
+</form>
+<div class="panel"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Khách hàng</th><th>Liên hệ</th><th class="text-end">Đặt phòng</th><th class="text-end">Vé bay</th><th class="text-end">Tổng chi tiêu</th><th>Hoạt động cuối</th><th>Tài khoản</th></tr></thead><tbody>
+@foreach (var c in Model)
+{
+  <tr>
+    <td><a class="rowlink" href="@Url.Action("Details", new { id = c.Id })">@Html.Avatar(c.Name, 38)<span><strong>@c.Name</strong><span class="d-block small text-muted">Tham gia @c.Joined.ToString("dd/MM/yyyy")</span></span></a></td>
+    <td class="small">@c.Email<div class="text-muted">@c.Phone</div></td>
+    <td class="text-end">@c.Bookings<div class="small text-muted">@Html.Short(c.HotelSpend)</div></td>
+    <td class="text-end">@c.Tickets<div class="small text-muted">@Html.Short(c.TicketSpend)</div></td>
+    <td class="text-end"><strong>@Html.Money(c.Lifetime)</strong></td>
+    <td class="small">@(c.LastActivity.HasValue ? c.LastActivity.Value.ToString("dd/MM/yyyy HH:mm") : "—")</td>
+    <td class="small">@if (c.AccountId.HasValue) { <span class="badge-st @(c.AccountActive == true ? "ok" : "bad")">@(c.AccountActive == true ? "Hoạt động" : "Đã khóa")</span><div class="text-muted mt-1">@c.UserName</div> } else { <span class="text-muted">Khách không tài khoản</span> }</td>
+  </tr>
+}
+@if (!Model.Any()) { <tr><td colspan="7" class="empty">Không tìm thấy khách hàng.</td></tr> }
+</tbody></table></div>@Html.Partial("_Pager")</div>

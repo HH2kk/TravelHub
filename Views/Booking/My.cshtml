@@ -1,0 +1,13 @@
+@model List<BookingListRow>
+<div class="container py-4"><h1 class="h2 mb-3">Đặt phòng của tôi</h1>
+@if (!Model.Any()) { <div class="empty">@Html.Icon("calendar", 40)<h2 class="h5">Bạn chưa có đặt phòng nào</h2><a class="btn btn-primary" href="@Url.Action("Index", "Hotels")">Tìm chỗ nghỉ</a></div> }
+else {
+<div class="d-grid gap-3">@foreach (var b in Model) {
+ <a class="result-card text-decoration-none" href="@Url.Action("Details", new { id = b.Id })" style="color:inherit">
+  <div class="thumb" style="width:200px"><img src="@Html.Img(b.CoverImage)" alt="@b.HotelName" loading="lazy" /></div>
+  <div class="info"><div class="d-flex justify-content-between gap-2 flex-wrap"><h2 class="h5 mb-1">@b.HotelName</h2>@Html.StatusBadge(b.Status)</div>
+   <div class="small text-muted">Mã: <strong>@b.Code</strong> · @b.RoomName</div>
+   <div class="mt-2">@Html.Icon("calendar", 14) @Html.Date(b.CheckIn) → @Html.Date(b.CheckOut)</div>
+   @if (b.StatusCode == "Pending" && b.ExpiresAt.HasValue && b.ExpiresAt > DateTime.Now) { <div class="small mt-1">Giữ phòng đến <strong>@b.ExpiresAt.Value.ToString("HH:mm")</strong> — hãy thanh toán để xác nhận.</div> }</div>
+  <div class="side"><div class="small text-muted">Tổng tiền</div><div class="price">@Html.Money(b.Total)</div></div></a> }</div> }
+</div>

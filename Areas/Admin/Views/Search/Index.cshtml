@@ -1,0 +1,12 @@
+@{ var res = (Dictionary<string, List<dynamic>>)ViewBag.Results; string q = ViewBag.Q;
+   Func<string, string, string> href = (g, id) => g == "Đặt phòng" ? "/Admin/Bookings/Details/" + id : g == "Vé máy bay" ? "/Admin/Tickets/Details/" + id : g == "Chuyến bay" ? "/Admin/Flights/Details/" + id : g == "Khách hàng" ? "/Admin/Customers/Details/" + id : "/Admin/Hotels/Edit/" + id;
+   Func<string, string> ic = g => g == "Đặt phòng" ? "calendar" : g == "Vé máy bay" ? "ticket" : g == "Chuyến bay" ? "plane" : g == "Khách hàng" ? "user" : "building";
+   bool any = res.Values.Any(v => v.Count > 0); }
+<div class="ph"><div><h1>Kết quả tìm kiếm</h1><div class="sub">@(string.IsNullOrWhiteSpace(q) ? "Nhập ít nhất 2 ký tự ở ô tìm kiếm phía trên." : "Cho “" + q + "”")</div></div></div>
+@if (!string.IsNullOrWhiteSpace(q) && !any) { <div class="panel empty">@Html.Icon("search", 28)Không tìm thấy kết quả phù hợp.</div> }
+@foreach (var g in res.Where(x => x.Value.Count > 0))
+{
+  <div class="sr-group panel"><h2>@g.Key <small>@g.Value.Count kết quả</small></h2>
+    @foreach (var r in g.Value) { <a class="sr-item" href="@href(g.Key, ((int)r.Id).ToString())"><span class="kpi-ico" style="color:#2563eb">@Html.Icon(ic(g.Key), 18)</span><span class="flex-grow-1"><b>@r.Title</b><small>@r.Sub</small></span>@if (!string.IsNullOrEmpty((string)r.Badge)) { <span class="chip gray">@r.Badge</span> }</a> }
+  </div>
+}

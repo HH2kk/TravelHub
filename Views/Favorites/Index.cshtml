@@ -1,0 +1,5 @@
+@model List<HotelCard>
+<div class="container py-4"><div class="d-flex justify-content-between align-items-center mb-3"><h1 class="h2 mb-0">Chỗ nghỉ yêu thích</h1>
+  @if (Model.Count >= 2) { <form method="get" action="@Url.Action("Compare", "Hotels")" class="d-flex gap-2 align-items-center flex-wrap"><span class="small text-muted">So sánh:</span>@foreach (var h in Model.Take(6)) { <label class="chip gray"><input type="checkbox" name="ids" value="@h.Id" class="me-1" />@h.Name</label> }<button class="btn btn-ghost btn-sm" type="submit">So sánh</button></form> }</div>
+  @if (!Model.Any()) { <div class="empty">@Html.Icon("heart", 40)<h2 class="h5">Chưa có chỗ nghỉ yêu thích</h2><p>Nhấn biểu tượng trái tim ở thẻ chỗ nghỉ để lưu lại.</p><a class="btn btn-primary" href="@Url.Action("Index", "Hotels")">Khám phá chỗ nghỉ</a></div> }
+  else { @Html.Partial("_HotelGrid", Model) }</div>

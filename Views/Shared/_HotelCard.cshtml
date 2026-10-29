@@ -1,0 +1,18 @@
+@model HotelCard
+@{ var favs = ViewBag.FavIds as HashSet<int>; bool on = favs != null && favs.Contains(Model.Id); string q = ViewBag.StayQuery as string; }
+<article class="card-th">
+  <div class="thumb">
+    <a href="@Url.Action("Details", "Hotels", new { id = Model.Id })@q" aria-label="Xem @Model.Name"><img src="@Html.Img(Model.CoverImageUrl)" alt="@Model.Name" loading="lazy" /></a>
+    <button type="button" class="fav-btn @(on ? "on" : "")" data-id="@Model.Id" aria-pressed="@(on ? "true" : "false")" aria-label="Thêm @Model.Name vào yêu thích">@Html.Icon("heart", 18)</button>
+  </div>
+  <div class="body">
+    <div class="d-flex justify-content-between align-items-start gap-2">
+      <div><h3><a class="stretched" href="@Url.Action("Details", "Hotels", new { id = Model.Id })@q">@Model.Name</a></h3>
+        <div class="small text-muted">@Html.Icon("map-pin", 14) @Model.DestinationName</div></div>
+      @if (Model.ReviewCount > 0) { <span class="score" title="@Model.ReviewCount đánh giá">@Model.Rating.ToString("0.0")</span> }
+    </div>
+    <div class="my-2">@Html.Stars(Model.Stars) <span class="chip gray">@Model.PropertyType</span></div>
+    <div class="d-flex justify-content-between align-items-end mt-2"><span class="small text-muted">@(Model.ReviewCount > 0 ? Model.ReviewCount + " đánh giá" : "Chưa có đánh giá")</span>
+      <div class="text-end"><div class="small text-muted">Từ</div><div class="price">@Html.Money(Model.PriceFrom)<small> /đêm</small></div></div></div>
+  </div>
+</article>
